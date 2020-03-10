@@ -156,7 +156,9 @@ class Store(object):
             
             # print('filename', filename)
             if trkid == -1:
-                trkid = self.tracklog.index.max() + 1
+                trkid = int(self.tracklog.index.max() + 1)
+                if type(trkid) is not int:
+                    print('error on trkid {0}/{1}'.format(type(trkid), trkid))
                 row = [trkid, url, filename, self.tracks + filename, filelength, filefp, filehash]
                 # print('    insert row', row)
                 self.tracklog.loc[trkid] = row
@@ -178,6 +180,8 @@ class Store(object):
                 shutil.copyfileobj(r.raw, f)
 
     def queue_track(self, track_location):
+        if track_location is None:
+            return
         for subcommand in ['--append', '--enqueue']:
             command = ['mocp', subcommand, '{0}'.format(track_location)]
             try:
