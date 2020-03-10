@@ -14,7 +14,7 @@ config = {
     'server': 'tcp://127.0.0.1:5200',
     'webapp': 'http://127.0.0.1:5000',
     'req': 'tcp://127.0.0.1:5210',
-    'tracks': path.join(getcwd(), 'data/download'),
+    'tracks': path.join(getcwd(), 'data/download/'),
     'last_sync': './data/last_sync'
 }
 
@@ -43,7 +43,7 @@ def main():
         print('callback', args)
     
     def backlog_req_func(*args, **kwargs):
-        print('backlog request')
+        print('player.init backlog_req_func')
         if collector.request_backlog():
             collector.write_sync_time(time())
         else:

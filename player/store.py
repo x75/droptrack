@@ -6,7 +6,39 @@ from urllib.parse import urlparse
 from subprocess import run, CalledProcessError
 from .player import PlayerError
 
+import hashlib
+import acoustid
+import chromaprint
+# import soundfile as sf
+import audioread
+import numpy as np
 import pandas as pd
+
+def get_filefp(filepath):
+    duration, fp_encoded = acoustid.fingerprint_file(filepath)
+    fingerprint, version = chromaprint.decode_fingerprint(fp_encoded)
+    return fingerprint
+
+def get_filelength(filepath):
+    # f = sf.SoundFile(filepath)
+    # filelength = len(f) / f.samplerate
+
+    with audioread.audio_open(filepath) as f:
+        print(f.channels, f.samplerate, f.duration)
+        filelength = f.duration
+    return filelength
+
+    
+def get_filehash(filepath):
+    # m = hashlib.md5()
+    m = hashlib.sha256()
+    with open(filepath, 'rb') as f: 
+        for byte_block in iter(lambda: f.read(4096),b""):
+            m.update(byte_block)
+        # for chunk in iter(f.read(1024)):
+        #     m.update(chunk)
+        return m.hexdigest()
+    return None
 
 class Store(object):
 
@@ -25,23 +57,45 @@ class Store(object):
             self.tracklog = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
 
     def download(self, url):
-        print('player.store.download from url {1} to self.tracks {0}'.format(self.tracks, url))
+        print('player.store.download\n    from url {1} to self.tracks {0}'.format(self.tracks, url))
         components = urlparse(url)
-        print('player.store.download url components {0}'.format(components))
+        print('    url components {0}'.format(components))
         filename = None
         ytid = None
         trackinfo = self.tracklog[self.tracklog.url == url]
+        print('    trackinfo length = {0}'.format(len(trackinfo)))
+        print('    {0}'.format(trackinfo.values))
+        # print('player.store download trackinfo\n    \'{0}\''.format(trackinfo['filename'].tolist()[0]))
         if len(trackinfo) > 0:
-            filename = str(trackinfo.filename.asobject[0])
-            filepath = str(trackinfo.filepath.asobject[0])
-            print('filename', filename)
-            print('filepath', filepath)
+            filename = str(trackinfo.filename.tolist()[0])
+            filepath = str(trackinfo.filepath.tolist()[0])
+            print('    found filename {0}'.format(filename))
+            print('    found filepath {0}'.format(filepath))
+
+            # filelength = str(trackinfo.length.tolist()[0])
+            # filefp = str(trackinfo.fingerprint.tolist()[0])
+            # filehash = str(trackinfo.hash.tolist()[0])
+
+            # print(type(filelength), type(filefp), type(filehash))
+            # # print(filelength == 'nan', filefp, filehash)
+            # if filelength == 'nan':
+            #     filelength = get_filelength(filepath)
+            #     self.tracklog.loc[trackinfo.id]['filelength'] = filelength
+            # if filefp == 'nan':
+            #     filefp = get_filefp(filepath)
+            #     self.tracklog.loc[trackinfo.id]['filefp'] = filefp
+            # if filehash == 'nan':
+            #     filehash = get_filehash(filepath)
+            #     self.tracklog.loc[trackinfo.id]['filehash'] = filehash
+
+            # self.tracklog.to_csv(self.tracklog_filename, index=False)
+            
             # found existing file, returning that skipping download
             if os.path.exists(filepath):
                 return path.join(self.tracks, filename)
-            trkid = int(trackinfo['id'])
+            trkid = int(trackinfo['id'].astype(object))
         else:
-            trkid = self.tracklog.index.max() + 1
+            trkid = -1 # self.tracklog.index.max() + 1
             
         if self.from_webapp(url):
             filename = path.basename(components.path)
@@ -67,10 +121,10 @@ class Store(object):
             raise PlayerError('not soundcloud nor bandcamp')
 
         try:
-            print('player.store running command {0}'.format(command))
+            print('    running command {0}'.format(command))
             run(command, check=True)
         except CalledProcessError:
-            print('failed to download from {}'.format(url))
+            print('    Error: failed to download from {}'.format(url))
         else:
             search_dir = self.tracks
             files = list(filter(os.path.isfile, glob.glob(search_dir + "/*")))
@@ -89,12 +143,22 @@ class Store(object):
                 print('ytid filename', filename)
                 filename = filename.split('/')[-1]
                 print('ytid filename', filename)
-                
+
+            # filepath
+            filepath = self.tracks + filename
+            # file length
+            filelength = get_filelength(filepath)
+            # hash
+            filehash = get_filehash(filepath)
+            # fingerprint
+            filefp = get_filefp(filepath)
+            
             # print('filename', filename)
-            row = [trkid, url, filename, self.tracks + filename, None, None, None]
-            # print('    insert row', row)
-            self.tracklog.loc[trkid] = row
-            self.tracklog.to_csv(self.tracklog_filename, index=False)
+            if trkid == -1:
+                row = [trkid, url, filename, self.tracks + filename, filelength, filefp, filehash]
+                print('    insert row', row)
+                self.tracklog.loc[trkid] = row
+                self.tracklog.to_csv(self.tracklog_filename, index=False)
 
             # return path.join(self.tracks, filename)
             return path.join(self.tracks, filename)
@@ -112,9 +176,10 @@ class Store(object):
                 shutil.copyfileobj(r.raw, f)
 
     def queue_track(self, track_location):
-        command = ['mocp', '--append', '--enqueue', '{0}'.format(track_location)]
-        try:
-            print('player.store.queue_track command {0}'.format(command))
-            run(command, check=True)
-        except CalledProcessError as e:
-            print(e)
+        for subcommand in ['--append', '--enqueue']:
+            command = ['mocp', subcommand, '{0}'.format(track_location)]
+            try:
+                print('player.store.queue_track\n    command {0}'.format(command))
+                run(command, check=True)
+            except CalledProcessError as e:
+                print(e)
