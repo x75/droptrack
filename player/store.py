@@ -50,16 +50,18 @@ class Store(object):
         else:
             self.webapps = config.get('webapps', [])
         self.tracklog_filename = 'data/player_tracklog.csv'
+        
+    def download(self, url):
+        print('player.store.download\n    from url {1} to self.tracks {0}'.format(self.tracks, url))
+        components = urlparse(url)
+        print('    url components {0}'.format(components))
+
         try:
             self.tracklog = pd.read_csv(self.tracklog_filename)
         except Exception as e:
             print('Could not load tracklog from file at {0}'.format(self.tracklog_filename))
             self.tracklog = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
 
-    def download(self, url):
-        print('player.store.download\n    from url {1} to self.tracks {0}'.format(self.tracks, url))
-        components = urlparse(url)
-        print('    url components {0}'.format(components))
         filename = None
         ytid = None
         trackinfo = self.tracklog[self.tracklog.url == url]
@@ -99,21 +101,25 @@ class Store(object):
             
         if self.from_webapp(url):
             filename = path.basename(components.path)
-            location = path.join(self.tracks, filename)
+            filepath_sub = 'soundscrape/'
+            location = path.join(self.tracks + 'soundscrape/', filename)
             command = ['curl', '-s', url, '--output', location]
             # this might also work in case curl is not available
             # self.download_from_webapp(url, location)
             # return location
         elif 'soundcloud.com' in components.netloc:
-            command = ['soundscrape', '-p', self.tracks, url]
+            filepath_sub = 'soundscrape/'
+            command = ['soundscrape', '-p', self.tracks + 'soundscrape/', url]
             filename = '?'
         elif 'bandcamp.com' in components.netloc:
-            command = ['soundscrape', '-b', '-p', self.tracks, url]
+            filepath_sub = 'soundscrape/'
+            command = ['soundscrape', '-b', '-p', self.tracks + 'soundscrape/', url]
             filename = '?'
         elif 'youtube.com' in components.netloc or 'youtu.be' in components.netloc:
+            filepath_sub = 'youtube-dl/'
             # command = ['youtube-dl', '-x', '-o', '{0}/%(title)s.%(ext)s'.format(self.tracks), '--audio-format', 'aac', url]
             # command = ['youtube-dl', '-x', '--audio-format', 'aac', '--get-filename', '-o', '{0}/%(title)s-%(id)s.%(ext)s'.format(self.tracks), url]
-            command = ['youtube-dl', '-x', '--audio-format', 'mp3', '--audio-quality', '4', '-o', '{0}/%(title)s-%(id)s.%(ext)s'.format(self.tracks), url]
+            command = ['youtube-dl', '-x', '--audio-format', 'mp3', '--audio-quality', '4', '-o', '{0}/%(title)s-%(id)s.%(ext)s'.format(self.tracks + 'youtube-dl/'), url]
             ytid = components.query.split('v=')[-1]
             print('    ytid =', ytid)
             filename = '?'
@@ -126,12 +132,12 @@ class Store(object):
         except CalledProcessError:
             print('    Error: failed to download from {}'.format(url))
         else:
-            search_dir = self.tracks
+            search_dir = self.tracks + filepath_sub
             files = list(filter(os.path.isfile, glob.glob(search_dir + "/*")))
-            print('files', files)
+            print('    files raw', files)
             if ytid is None:
                 files.sort(key=lambda x: os.path.getmtime(x))
-                print('files', files)
+                print('    files sorted', files)
                 # filename is most recent file in listing
                 filename = path.basename(files[-1])
             else:
@@ -145,7 +151,7 @@ class Store(object):
                 print('ytid filename', filename)
 
             # filepath
-            filepath = self.tracks + filename
+            filepath = self.tracks + filepath_sub + filename
             # file length
             filelength = get_filelength(filepath)
             # hash
@@ -156,9 +162,10 @@ class Store(object):
             
             # print('filename', filename)
             if trkid == -1:
-                trkid = int(self.tracklog.index.max() + 1)
+                trkid = self.tracklog.index.max() + 1
                 if type(trkid) is not int:
                     print('error on trkid {0}/{1}'.format(type(trkid), trkid))
+                    trkid = 1
                 row = [trkid, url, filename, self.tracks + filename, filelength, filefp, filehash]
                 # print('    insert row', row)
                 self.tracklog.loc[trkid] = row
