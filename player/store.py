@@ -155,6 +155,7 @@ class Store(object):
             
             # print('filename', filename)
             if trkid == -1:
+                trkid = self.tracklog.index.max() + 1
                 row = [trkid, url, filename, self.tracks + filename, filelength, filefp, filehash]
                 print('    insert row', row)
                 self.tracklog.loc[trkid] = row
