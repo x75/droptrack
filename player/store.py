@@ -43,36 +43,60 @@ def get_filehash(filepath):
 class Store(object):
 
     def __init__(self, config):
-        self.tracks = config.get('tracks', '/tmp')
+        self.trackstore_dir = config.get('tracks', '/tmp')
         webapp = config.get('webapp')
         if webapp:
             self.webapps = [webapp]
         else:
             self.webapps = config.get('webapps', [])
-        self.tracklog_filename = 'data/player_tracklog.csv'
-        
-    def download(self, url):
-        print('player.store.download\n    from url {1} to self.tracks {0}'.format(self.tracks, url))
-        components = urlparse(url)
-        print('    url components {0}'.format(components))
 
+        # init track store
+        self.trackstore_filename = 'data/player_trackstore.csv'
+        self.trackstore_key = 'miniclub6'
         try:
-            self.tracklog = pd.read_csv(self.tracklog_filename)
+            self.ts = pd.read_csv(self.trackstore_filename)
+            # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
+            # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
         except Exception as e:
-            print('Could not load tracklog from file at {0}'.format(self.tracklog_filename))
-            self.tracklog = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
+            print('Could not load trackstore from file at {0}'.format(self.trackstore_filename))
+            # continue without trackstore
+            # self.trackstore = None
+            # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
+            self.ts = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
+            self.ts.to_csv(self.trackstore_filename, index=False)
+            
+        # self.ts = self.trackstore[self.trackstore_key]
 
+    def download(self, url):
+        """player.Store.download
+        """
+        print('player.store.download')
+        # print('    from url {1} to self.trackstore_dir {0}'.format(self.trackstore_dir, url))
+        components = urlparse(url)
+        # print('    url components {0}'.format(components))
+
+
+        # prepare trackinfo defaults
         filename = None
+        filepath = None
         ytid = None
-        trackinfo = self.tracklog[self.tracklog.url == url]
-        print('    trackinfo length = {0}'.format(len(trackinfo)))
-        print('    {0}'.format(trackinfo.values))
+        ytaudiofmt = 'mp3'
+        trkid = -1
+
+        # try to get trackinfo from store
+        trackinfo = self.ts[self.ts.url == url]
+        # print('    trackinfo length = {0}'.format(len(trackinfo)))
+        # print('    {0}'.format(trackinfo.values))
         # print('player.store download trackinfo\n    \'{0}\''.format(trackinfo['filename'].tolist()[0]))
+        
+        # if track is in the store already
         if len(trackinfo) > 0:
-            filename = str(trackinfo.filename.tolist()[0])
+            # filename = str(trackinfo.filename.tolist()[0])
+            # track is in the store and file does not exist
+            trkid = int(trackinfo['id'].astype(object))
             filepath = str(trackinfo.filepath.tolist()[0])
-            print('    found filename {0}'.format(filename))
-            print('    found filepath {0}'.format(filepath))
+            # print('    found filename {0}'.format(filename))
+            # print('    found filepath {0}'.format(filepath))
 
             # filelength = str(trackinfo.length.tolist()[0])
             # filefp = str(trackinfo.fingerprint.tolist()[0])
@@ -82,76 +106,93 @@ class Store(object):
             # # print(filelength == 'nan', filefp, filehash)
             # if filelength == 'nan':
             #     filelength = get_filelength(filepath)
-            #     self.tracklog.loc[trackinfo.id]['filelength'] = filelength
+            #     self.trackstore.loc[trackinfo.id]['filelength'] = filelength
             # if filefp == 'nan':
             #     filefp = get_filefp(filepath)
-            #     self.tracklog.loc[trackinfo.id]['filefp'] = filefp
+            #     self.trackstore.loc[trackinfo.id]['filefp'] = filefp
             # if filehash == 'nan':
             #     filehash = get_filehash(filepath)
-            #     self.tracklog.loc[trackinfo.id]['filehash'] = filehash
+            #     self.trackstore.loc[trackinfo.id]['filehash'] = filehash
 
-            # self.tracklog.to_csv(self.tracklog_filename, index=False)
+            # self.trackstore.to_csv(self.trackstore_filename, index=False)
             
-            # found existing file, returning that skipping download
+            # track is in the store and file exists            
             if os.path.exists(filepath):
-                return path.join(self.tracks, filename)
-            trkid = int(trackinfo['id'].astype(object))
-        else:
-            trkid = -1 # self.tracklog.index.max() + 1
-            
+                # return existing file and skip download
+                # return path.join(self.trackstore_dir, filename)
+                return filepath
+
+        # filename, filepath, trkid, ytid
+        
+        # select handler depending on url type    
         if self.from_webapp(url):
+            handle = 'webapp/'
+            filehandle = ''
             filename = path.basename(components.path)
-            filepath_sub = 'soundscrape/'
-            location = path.join(self.tracks + 'soundscrape/', filename)
+            location = path.join(self.trackstore_dir + handle, filename)
             command = ['curl', '-s', url, '--output', location]
             # this might also work in case curl is not available
             # self.download_from_webapp(url, location)
             # return location
+            
         elif 'soundcloud.com' in components.netloc:
-            filepath_sub = 'soundscrape/'
-            command = ['soundscrape', '-p', self.tracks + 'soundscrape/', url]
-            filename = '?'
+            handle = 'soundscrape/'
+            filehandle = path.basename(components.path)
+            filename = path.basename(components.path)
+            command = ['soundscrape', '-p', self.trackstore_dir + handle + filehandle, url]
         elif 'bandcamp.com' in components.netloc:
-            filepath_sub = 'soundscrape/'
-            command = ['soundscrape', '-b', '-p', self.tracks + 'soundscrape/', url]
-            filename = '?'
+            handle = 'soundscrape/'
+            filehandle = path.basename(components.path)
+            filename = path.basename(components.path)
+            command = ['soundscrape', '-b', '-p', self.trackstore_dir + handle + filehandle, url]
         elif 'youtube.com' in components.netloc or 'youtu.be' in components.netloc:
-            filepath_sub = 'youtube-dl/'
-            # command = ['youtube-dl', '-x', '-o', '{0}/%(title)s.%(ext)s'.format(self.tracks), '--audio-format', 'aac', url]
-            # command = ['youtube-dl', '-x', '--audio-format', 'aac', '--get-filename', '-o', '{0}/%(title)s-%(id)s.%(ext)s'.format(self.tracks), url]
-            command = ['youtube-dl', '-x', '--audio-format', 'mp3', '--audio-quality', '4', '-o', '{0}/%(title)s-%(id)s.%(ext)s'.format(self.tracks + 'youtube-dl/'), url]
+            handle = 'youtube-dl/'
+            # command = ['youtube-dl', '-x', '-o', '{0}/%(title)s.%(ext)s'.format(self.trackstore_dir), '--audio-format', 'aac', url]
+            # command = ['youtube-dl', '-x', '--audio-format', 'aac', '--get-filename', '-o', '{0}/%(title)s-%(id)s.%(ext)s'.format(self.trackstore_dir), url]
+            command = ['youtube-dl', '-x', '--audio-format', ytaudiofmt, '--audio-quality', '4', '-k', '-o', '{0}/%(title)s-%(id)s.%(ext)s'.format(self.trackstore_dir + 'youtube-dl/'), url]
             ytid = components.query.split('v=')[-1]
-            print('    ytid =', ytid)
-            filename = '?'
+            # print('    ytid =', ytid)
+            filehandle = ''
+            filename = ytid
         else:
-            raise PlayerError('not soundcloud nor bandcamp')
+            raise PlayerError('    Error: unknown url type {0}'.format(components.netloc))
 
+        # run the command
         try:
             print('    running command {0}'.format(command))
             run(command, check=True)
         except CalledProcessError:
             print('    Error: failed to download from {}'.format(url))
         else:
-            search_dir = self.tracks + filepath_sub
+            # file has been downloaded
+            # get the filename
+            
+            search_dir = self.trackstore_dir + handle + filehandle
             files = list(filter(os.path.isfile, glob.glob(search_dir + "/*")))
-            print('    files raw', files)
+            print('    files raw ', search_dir, files)
+
+            # anything not youtube
             if ytid is None:
+                # sort by modification time
                 files.sort(key=lambda x: os.path.getmtime(x))
+                print('        filename', filename)
                 print('    files sorted', files)
                 # filename is most recent file in listing
                 filename = path.basename(files[-1])
+            # youtube-dl
             else:
                 # filename is the entry matching the youtube id
                 # filename = files[files.index(ytid)]
+                files = list(filter(os.path.isfile, glob.glob(search_dir + "/*." + ytaudiofmt)))
                 filename = list([_ for _ in files if ytid in _])
-                print('ytid filename', filename)
+                print('    ytid filename matches', filename)
                 filename = filename[0]
-                print('ytid filename', filename)
+                print('    ytid filename', filename)
                 filename = filename.split('/')[-1]
-                print('ytid filename', filename)
+                print('    ytid filename', filename)
 
             # filepath
-            filepath = self.tracks + filepath_sub + filename
+            filepath = self.trackstore_dir + handle + filehandle + '/' + filename
             # file length
             filelength = get_filelength(filepath)
             # hash
@@ -161,18 +202,33 @@ class Store(object):
             filefp = 'fingerprint'
             
             # print('filename', filename)
-            if trkid == -1:
-                trkid = self.tracklog.index.max() + 1
-                if type(trkid) is not int:
-                    print('error on trkid {0}/{1}'.format(type(trkid), trkid))
-                    trkid = 1
-                row = [trkid, url, filename, self.tracks + filename, filelength, filefp, filehash]
-                # print('    insert row', row)
-                self.tracklog.loc[trkid] = row
-                self.tracklog.to_csv(self.tracklog_filename, index=False)
 
-            # return path.join(self.tracks, filename)
-            return path.join(self.tracks, filename)
+            # not in store
+            if trkid == -1:
+                # not in store but store has entries
+                if len(self.ts) > 0:
+                    # trkid = self.ts.index.max() + 1
+                    trkid = int(self.ts['id'].max() + 1)
+                # store is empty
+                else:
+                    trkid = 1
+
+                # compose new row
+                row = [trkid, url, filename, filepath, filelength, filefp, filehash]
+                # print('    insert row', row)
+                self.ts.loc[trkid] = row
+            # in store but new download on file not found
+            else:
+                self.ts.loc[trkid]['filename'] = filename
+                self.ts.loc[trkid]['filepath'] = filepath
+                self.ts.loc[trkid]['filelength'] = filelength
+                self.ts.loc[trkid]['filefp'] = filefp
+                self.ts.loc[trkid]['filehash'] = filehash
+
+            # self.ts.to_hdf(self.trackstore_filename, self.trackstore_key)
+            self.ts.to_csv(self.trackstore_filename, index=False)
+                
+            return filepath # path.join(self.trackstore_dir + handle, filename)
 
     def from_webapp(self, url):
         for w in self.webapps:
