@@ -22,6 +22,7 @@ from .lib import (
 )
 from webapp.queue import Queue
 
+import pandas as pd
 
 try:
     APP_ENV = os.environ['APP_ENV']
@@ -31,7 +32,6 @@ except KeyError:
 
 def root():
     return render_template('url.html')
-
 
 def url():
     """
@@ -46,6 +46,78 @@ def url():
             flash('Sorry, this did not work. Please try again')
     return redirect('/')
 
+def tracklist():
+    tracklist = pd.read_csv('data/player_trackstore.csv')
+    print(f'tracklist {tracklist.columns} {tracklist.shape}')
+    return render_template('tracklist.html', name="opt", tracklist=tracklist)
+
+def run_autoedit(args):
+    print(f'autoedit args {type(args)}')
+    # print(f'autoedit request {dir(request)}')
+    # print(f'autoedit request {request.json}')
+    # print(f'autoedit request {request.form}')
+
+    # import main_autoedit
+    from smp_audio.autoedit import main_autoedit
+    # create argparse.Namespace from request.form
+    from argparse import Namespace
+    args = Namespace()
+    # run main_autoedit with args
+    
+    for k in request.form:
+        setattr(args, k, request.form[k])
+
+    args.numsegs = int(args.numsegs)
+    args.seed = int(args.seed)
+    args.duration = int(args.duration)
+
+    tracklist = pd.read_csv('data/player_trackstore.csv')
+    trackid = int(request.form.get('trackid'))
+    track = tracklist.loc[trackid]
+
+    # filename = track.filename
+        
+    args.filenames = [track.filepath]
+    args.mode = 'autoedit'
+    args.sr_comp=22050
+    args.sorter='features_mt_spectral_spread_mean'
+    args.seglen_min=2
+    args.seglen_max=60
+    args.write=False
+        
+    print(f'run_autoedit args {args}')
+
+    autoedit_res = main_autoedit(args)
+        
+    return autoedit_res
+
+def trackdl():
+    path = request.form[trackpath]
+    return send_from_directory('data/download', path)
+
+def track():
+    if request.method == 'POST':
+        # print(f'track, got post {request}')
+        trackid = int(request.form.get('trackid'))
+        mode = request.form.get('mode')
+    else:
+        trackid = request.args.get('trackid')
+        if trackid is None:
+            flash('no trackid')
+            return redirect('/tracklist')
+        trackid = int(trackid)
+        mode = "show"
+    # load tracks
+    tracklist = pd.read_csv('data/player_trackstore.csv')
+    # get track
+    track = tracklist.loc[trackid]
+    # print(f'track {track}\nmode {mode}')
+    if mode == "autoedit":
+        autoedit_res = run_autoedit(track)
+    else:
+        autoedit_res = {'filename': None, 'length': None, 'segs': None}
+    print(f'track: autoedit_res {autoedit_res}')
+    return render_template('track.html', name="opt", tracklist=track, autoedit_res=autoedit_res)
 
 def upload():
     """
@@ -80,11 +152,15 @@ def download(filename):
 def setup_routes(app):
     url.methods = ['GET', 'POST']
     upload.methods = ['POST']
+    track.methods = ['GET', 'POST']
+    
     app.add_url_rule('/', 'root', root)
     app.add_url_rule('/url', 'url', url)
     app.add_url_rule('/soundfile', 'upload', upload)
     app.add_url_rule('/soundfile/<path:filename>', 'download', download)
-
+    app.add_url_rule('/track', 'track', track)
+    app.add_url_rule('/trackdl', 'trackdl', trackdl)
+    app.add_url_rule('/tracklist', 'tracklist', tracklist)
 
 def setup_queue(app):
     app.queue = Queue(app.config)

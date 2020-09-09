@@ -1,0 +1,71 @@
+{% extends "main.html" %}
+
+{% block content2 %}
+<!-- div style="font-family: sans;"><p>We are tracklist</p></div -->
+
+<div style="position: relative; top: 20px">
+  <div style="font-family: sans;"><p style="font-weight: bold">track </p></div>
+  <div style="font-family: sans"><p>display the track database</p></div>
+  <div style="font-family: sans">
+    <p>workflow: 1) upload your track, 2) select track(s) from the list, 3) select operation, 4) run the thing</p>
+    <p>form action is autosuite flask app</p>
+  </div>
+</div>
+
+{% if True %}
+<div style="position: relative; top: 20px">
+
+  {% if request.method == 'GET' %}
+  <p>GET trackid = {{ request.args.get('trackid') }}, track = {{ tracklist.filename }}</p>
+  {% endif %}
+  {% if request.method == 'POST' %}
+  <p>POST trackid = {{ request.form.get('trackid') }}, track = {{ tracklist.filename }}</p>
+  {% endif %}
+  
+  <table>
+    
+    <!-- <tr> -->
+    <!-- {% for field in tracklist %} -->
+    <!-- <td style="font-family: sans; font-weight: bold"> -->
+    <!--   {{ field }} -->
+    <!-- </td> -->
+    <!-- {% endfor %} -->
+    <!-- </tr> -->
+    
+    {% for fielddata in tracklist %}
+    <tr>
+      <td style="font-family: sans">
+	{{ fielddata|string|truncate(100) }}
+      </td>
+      
+      {% endfor %}
+    </tr>
+    
+  </table>
+
+  <div>
+    <form action="track" method="POST">
+        <!-- input name="track" type"track" placeholder="URL of soundfile"/ -->
+        <input name="trackid" type="hidden" value="{{ tracklist.id }}" />
+        <input name="mode" type="hidden" value="autoedit" />
+        duration in secs <input name="duration" type="input" value="180" />
+        number of segments <input name="numsegs" type="input" value="30" />
+        assemble mode <input name="assemble_mode" type="input" value="random" />
+        seed <input name="seed" type="input" value="1234" />
+        <input type="submit" value="autoedit" />
+    </form>
+  </div>
+
+  autoedit results
+  <table>
+  {% for k in autoedit_res %}
+    <tr>
+      <td style="font-family: sans">
+	{{ k }} - {{ autoedit_res[k]|string|truncate(100) }}
+      </td>
+      {% endfor %}
+    </tr>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
