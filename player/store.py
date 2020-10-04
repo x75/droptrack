@@ -52,7 +52,9 @@ class Store(object):
             self.webapps = config.get('webapps', [])
 
         # init track store
-        self.trackstore_filename = 'data/player_trackstore.csv'
+        # self.trackstore_filename = 'data/player_trackstore.csv'
+        self.trackstore_filename = 'data/player_trackstore_default.csv'
+        self.trackstore_filename_base = 'data/player_trackstore'
         self.trackstore_key = 'miniclub6'
         try:
             self.ts = pd.read_csv(self.trackstore_filename)
@@ -71,7 +73,7 @@ class Store(object):
     def download(self, url, user_session=None):
         """player.Store.download
         """
-        print('player.store.download')
+        # print(f'player.store.download url {url}')
         # print('    from url {1} to self.trackstore_dir {0}'.format(self.trackstore_dir, url))
         if url.startswith('{'):
             url_dict = json.loads(url)
@@ -232,7 +234,7 @@ class Store(object):
 
                 # compose new row
                 row = [trkid, url, filename, filepath, filelength, filefp, filehash]
-                # print('    insert row', row)
+                print(f'    insert row {row}')
                 self.ts.loc[trkid] = row
             # in store but new download on file not found
             else:
@@ -248,13 +250,13 @@ class Store(object):
             row_user = self.ts.loc[trkid] # .to_dict()
             # del row_user['id']
             print(f'    download {trkid} row_user {row_user}')
-            trackstore_user_filename = f'{self.trackstore_filename[:-4]}_{username}.csv' 
+            trackstore_user_filename = f'{self.trackstore_filename_base}_{username}.csv' 
             try:
                 ts_user = pd.read_csv(trackstore_user_filename, header=0, sep=',')
                 # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
                 # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
             except Exception as e:
-                print(f'Could not load trackstore_user for user {username} from file at {self.trackstore_filename}')
+                print(f'Could not load trackstore_user for user {username} from file at {trackstore_user_filename}')
                 # continue without trackstore
                 # self.trackstore = None
                 # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])

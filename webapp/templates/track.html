@@ -4,25 +4,29 @@
 <!-- div style="font-family: sans;"><p>We are tracklist</p></div -->
 
 <div style="position: relative; top: 20px">
-  <div style="font-family: sans;"><p style="font-weight: bold">track </p></div>
-  <div style="font-family: sans"><p>display the track database</p></div>
-  <div style="font-family: sans">
-    <p>workflow: 1) upload your track, 2) select track(s) from the list, 3) select operation, 4) run the thing</p>
-    <p>form action is autosuite flask app</p>
-  </div>
+  <div style="font-family: sans;"><p>session <span style="font-weight: bold">{{ username }}</span></p></div>
+  <div style="font-family: sans;"><p style="font-weight: bold"><a href="/url">droptrack</a> | <a href="/tracklist">tracklist</a></p></div>
+  <div style="font-family: sans;"><p style="font-weight: bold">track detail id <a href="/track?trackid={{ tracklist['id'] }}">{{ tracklist['id'] }}</a></p></div>
+  <!-- <div style="font-family: sans"> -->
+  <!--   <p>workflow: 1) upload your track, 2) select track(s) from the list, 3) select operation, 4) run the thing</p> -->
+  <!--   <p>form action is autosuite flask app</p> -->
+  <!-- </div> -->
 </div>
 
 {% if True %}
-<div style="position: relative; top: 20px">
+<div style="position: relative; top: 20px; font-family: sans">
 
+  {% if False %}
   {% if request.method == 'GET' %}
-  <p>GET trackid = {{ request.args.get('trackid') }}, track = {{ tracklist.filename }}</p>
+  <p>request GET, trackid {{ request.args.get('trackid') }}, track {{ tracklist.filename }}</p>
   {% endif %}
   {% if request.method == 'POST' %}
   <p>POST trackid = {{ request.form.get('trackid') }}, track = {{ tracklist.filename }}</p>
   {% endif %}
-  
-  <table>
+  {% endif %}
+
+  <!-- <p>trackinfo</p> -->
+  <table style="border: 2px;">
     
     <!-- <tr> -->
     <!-- {% for field in tracklist %} -->
@@ -31,24 +35,25 @@
     <!-- </td> -->
     <!-- {% endfor %} -->
     <!-- </tr> -->
-    
-    {% for fielddata in tracklist %}
+    {% for track_key in tracklist %}
     <tr>
       <td style="font-family: sans">
-	{{ fielddata|string|truncate(100) }}
+	{{ track_key }}
       </td>
-      
-      {% endfor %}
+      <td>{{ tracklist[track_key]|string|truncate(100) }}</td>
     </tr>
+    {% endfor %}
     
   </table>
 
-  <div>
+  <div style="position: relative; top: 20px; font-family: sans">
+    <span style="font-weight: bold">autoedit params</span>
+    <hr />
     <form action="track" method="POST">
         <!-- input name="track" type"track" placeholder="URL of soundfile"/ -->
         <input name="trackid" type="hidden" value="{{ tracklist.id }}" />
         <input name="mode" type="hidden" value="autoedit" />
-        duration in secs <input name="duration" type="input" value="180" />
+        duration in secs <input name="duration" type="input" value="120" />
         number of segments <input name="numsegs" type="input" value="30" />
         assemble mode <input name="assemble_mode" type="input" value="random" />
         seed <input name="seed" type="input" value="1234" />
@@ -56,20 +61,49 @@
     </form>
   </div>
 
-  autoedit results
-  <table>
-  {% for k in autoedit_res %}
-    <tr>
-      <td style="font-family: sans">
-	{% if k == "filename" %}
-	{{ k }} - <a href="http://localhost/droptrack/{{ autoedit_res[k] }}">{{ autoedit_res[k]|string|truncate(100) }}</a>
-	{% else %}
-	{{ k }} - {{ autoedit_res[k]|string|truncate(100) }}
-	{% endif %}
-      </td>
+  <div style="position: relative; top: 40px; font-family: sans">
+    {% if False and autoedit_res['filename_export'] != None %}
+    <p>autoedit results</p>
+    <table>
+      {% for k in autoedit_res %}
+      <tr>
+	<td style="font-family: sans">
+	  {% if k == "filename_export" %}
+	  {{ k }} - <a href="http://localhost/droptrack/{{ autoedit_res[k] }}">{{ autoedit_res[k]|string|truncate(100) }}</a>
+	  {% else %}
+	  {{ k }} - {{ autoedit_res[k]|string|truncate(100) }}
+	  {% endif %}
+	</td>
+	{% endfor %}
+      </tr>
+    </table>
+    {% endif %}
+    
+    <div style="position: relative; top: 20px; font-family: sans">
+      <span style="font-weight: bold">autoedit tables</span>
+    </div>
+    
+    <div style="position: relative; top: 20px; font-family: sans">
+      {% for rowidx, rowdata in ts_autoedit.sort_index(ascending=False).iterrows() %}
+      <div style="position: relative; top: 0px; font-family: sans">
+	<hr />
+	<table>
+	  {% for fielddata in rowdata %}
+	  <tr>
+	    <td style="font-family: sans">
+	      {% if loop.index == 2 %}
+	      <a href="http://localhost/droptrack/{{fielddata}}">{{ fielddata|string|truncate(20) }}</a>
+	      {% else %}
+	      {{ fielddata|string|truncate(20) }}
+	      {% endif %}
+	    </td>
+	  </tr>
+	  {% endfor %}
+	</table>
+      </div>
       {% endfor %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 {% endblock %}

@@ -34,6 +34,12 @@ try:
 except KeyError:
     APP_ENV = 'config.Config'
 
+conf = {
+    'user_session_log_file': 'data/user_session_log.csv',
+    'trackstore_filename': 'data/player_trackstore.csv',
+    'trackstore_filename_base': 'data/player_trackstore',
+}
+    
 def generate_username(length=4):
     letters = string.ascii_lowercase
     result_str = ''.join(random.choice(letters) for i in range(length))
@@ -41,7 +47,8 @@ def generate_username(length=4):
     return result_str
 
 def store_user_session(username):
-    user_session_log_file = 'data/user_session_log.csv'
+    # user_session_log_file = 'data/user_session_log.csv'
+    user_session_log_file = conf['user_session_log_file']
     user_session_log = pd.read_csv(user_session_log_file, sep=',', header=0)
     if len(user_session_log.index) < 1:
         user_session_log_max_idx = -1
@@ -70,7 +77,7 @@ def root():
         print(f'getting cookie {username}')
 
     # default tracklist
-    tracklist = pd.read_csv('data/player_trackstore.csv')
+    tracklist = pd.read_csv('{0}_{1}.csv'.format(conf['trackstore_filename_base'], username))
     print(f'tracklist {tracklist.columns} {tracklist.shape}')
 
     # create response
@@ -111,12 +118,23 @@ def tracklist():
     else:
         username = 'default'
 
-    tracklist_filename = f'data/player_trackstore_{username}.csv'
+    tracklist_filename = f'{conf["trackstore_filename_base"]}_{username}.csv'
     tracklist = pd.read_csv(tracklist_filename)
     print(f'    loaded tracklist\n        from {tracklist_filename}\n    into {tracklist.columns} {tracklist.shape}')
-    return render_template('tracklist.html', tracklist=tracklist, username=username)
+
+    tracklist_filename_default = f'{conf["trackstore_filename_base"]}_default.csv'
+    tracklist_default = pd.read_csv(tracklist_filename_default)
+
+    return render_template('tracklist.html', tracklist=tracklist, tracklist_default=tracklist_default, username=username)
 
 def run_autoedit(args):
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    # get user_session
+    if 'username' in request.cookies:
+        username = request.cookies["username"]
+    else:
+        username = 'default'
+        
     print(f'autoedit args {type(args)}')
     # print(f'autoedit request {dir(request)}')
     # print(f'autoedit request {request.json}')
@@ -136,7 +154,7 @@ def run_autoedit(args):
     args.seed = int(args.seed)
     args.duration = int(args.duration)
 
-    tracklist = pd.read_csv('data/player_trackstore.csv')
+    tracklist = pd.read_csv('{0}_{1}.csv'.format(conf['trackstore_filename_base'], username))
     trackid = int(request.form.get('trackid'))
     track = tracklist.loc[trackid]
 
@@ -149,7 +167,10 @@ def run_autoedit(args):
     args.seglen_min=2
     args.seglen_max=60
     args.write=False
-        
+
+    args.assemble_mode = request.form.get('assemble_mode')
+    args.assemble_crossfade = 10
+    
     print(f'run_autoedit args {args}')
 
     autoedit_res = main_autoedit(args)
@@ -164,6 +185,13 @@ def trackdl():
 
 def track():
     assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    # get user_session
+    if 'username' in request.cookies:
+        username = request.cookies["username"]
+    else:
+        username = 'default'
+
+    # handle request methods
     if request.method == 'POST':
         # print(f'track, got post {request}')
         trackid = int(request.form.get('trackid'))
@@ -178,21 +206,61 @@ def track():
     print(f'    track: session {session.keys()}')
     print(f'    track: cookies {request.cookies.keys()}')
     
-    # if 'user' not in request.cookies:
-    #     # request.cookies.put
-    #     resp.set_cookie('username', 'the username')
-        
     # load tracks
-    tracklist = pd.read_csv('data/player_trackstore.csv')
+    tracklist = pd.read_csv('{0}_{1}.csv'.format(conf['trackstore_filename_base'], username))
     # get track
-    track = tracklist.loc[trackid]
-    # print(f'track {track}\nmode {mode}')
+    track = tracklist.loc[trackid].to_dict()
+    print(f'track {track}\nmode {mode}')
+
+    autoedit_res = {
+        'filename_export': None, 'length': None,
+        'segs': None, 'final_duration': 0, 'seg_s': 0
+    }
+
     if mode == "autoedit":
-        autoedit_res = run_autoedit(track)
-    else:
-        autoedit_res = {'filename': None, 'length': None, 'segs': None}
-    print(f'    track: autoedit_res {autoedit_res}')
-    return render_template('track.html', name="opt", tracklist=track, autoedit_res=autoedit_res)
+        autoedit_res_ = run_autoedit(track)
+        autoedit_res.update(autoedit_res_)
+
+    # record results
+    results_filename = '{0}_{1}_{2}.csv'.format(conf['trackstore_filename_base'], username, trackid)
+    print(f'    results_filename {results_filename}')
+    print(f'    autoedit_res {autoedit_res}')
+
+    try:
+        ts_autoedit = pd.read_csv(results_filename)
+        print(f'    ts_autoedit pre append {ts_autoedit}')
+        # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
+        # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
+    except Exception as e:
+        print('Could not load trackstore from file at {0}'.format(results_filename))
+        # continue without trackstore
+        # self.trackstore = None
+        # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
+        # autoedit_res['id'] = 0
+        autoedit_res_keys = ['id',
+                             'filename_export',
+                             'length',
+                             'segs',
+                             'final_duration',
+                             'seg_s','filename_','numsegs','autoedit_graph'
+        ]
+        ts_autoedit = pd.DataFrame(columns=autoedit_res_keys, index=pd.Index([0]))
+        autoedit_res['id'] = 0
+        print(f'    ts_autoedit new table {ts_autoedit}')
+
+    if mode == "autoedit":
+        if len(ts_autoedit.index) < 1:
+            ts_autoedit_max_idx = -1
+        else:
+            ts_autoedit_max_idx = ts_autoedit.index[-1]
+        autoedit_res['id'] = ts_autoedit_max_idx + 1
+        ts_autoedit = ts_autoedit.append(autoedit_res, ignore_index=True)
+        print(f'    ts_autoedit post append {ts_autoedit}')
+
+        ts_autoedit.to_csv(results_filename, index=False)
+
+    # print(f'    track: autoedit_res {autoedit_res}')
+    return render_template('track.html', name="opt", tracklist=track, username=username, autoedit_res=autoedit_res, ts_autoedit=ts_autoedit)
 
 def upload():
     """
