@@ -69,8 +69,12 @@ def root():
         username = request.cookies["username"]
         print(f'getting cookie {username}')
 
+    # default tracklist
+    tracklist = pd.read_csv('data/player_trackstore.csv')
+    print(f'tracklist {tracklist.columns} {tracklist.shape}')
+
     # create response
-    resp = make_response(render_template('url.html', username=username))
+    resp = make_response(render_template('url.html', username=username, tracklist=tracklist))
 
     # set cookie on response
     if 'username' not in request.cookies:        
@@ -101,9 +105,16 @@ def url():
     return redirect('/')
 
 def tracklist():
-    tracklist = pd.read_csv('data/player_trackstore.csv')
-    print(f'tracklist {tracklist.columns} {tracklist.shape}')
-    return render_template('tracklist.html', name="opt", tracklist=tracklist)
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    if 'username' in request.cookies:
+        username = request.cookies["username"]
+    else:
+        username = 'default'
+
+    tracklist_filename = f'data/player_trackstore_{username}.csv'
+    tracklist = pd.read_csv(tracklist_filename)
+    print(f'    loaded tracklist\n        from {tracklist_filename}\n    into {tracklist.columns} {tracklist.shape}')
+    return render_template('tracklist.html', tracklist=tracklist, username=username)
 
 def run_autoedit(args):
     print(f'autoedit args {type(args)}')

@@ -245,8 +245,9 @@ class Store(object):
             # self.ts.to_hdf(self.trackstore_filename, self.trackstore_key)
             self.ts.to_csv(self.trackstore_filename, index=False)
 
-            row_user = self.ts.loc[trkid].to_dict()
-            print(f'    download row_user {row_user}')
+            row_user = self.ts.loc[trkid] # .to_dict()
+            # del row_user['id']
+            print(f'    download {trkid} row_user {row_user}')
             trackstore_user_filename = f'{self.trackstore_filename[:-4]}_{username}.csv' 
             try:
                 ts_user = pd.read_csv(trackstore_user_filename, header=0, sep=',')
@@ -260,8 +261,21 @@ class Store(object):
                 ts_user = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
                 ts_user.to_csv(trackstore_user_filename, index=False)
 
-            ts_user = ts_user.append(row_user, ignore_index=True)
-            ts_user.to_csv(trackstore_user_filename)
+            # ts_user = pd.DataFrame(ts_user)
+                
+            trkid_user = int(ts_user['id'].max() + 1)
+            row_user['id'] = trkid_user
+            print(f'    download trkid_user {trkid_user} row_user {row_user}')
+            
+            print(f'    download type(ts_user) {type(ts_user)}')
+            print(f'    download ts_user df {ts_user.columns}, {ts_user.shape}')
+
+            # ts_user = ts_user.append(row_user, ignore_index=True)
+            ts_user.loc[trkid_user] = row_user.to_list()
+
+            print(f'    download {ts_user.columns}, {ts_user.shape}')
+
+            ts_user.to_csv(trackstore_user_filename, index=False)
                 
             return filepath # path.join(self.trackstore_dir + handle, filename)
 
