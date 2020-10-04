@@ -20,5 +20,9 @@ class Queue(object):
         with self.socket() as socket:
             socket.send_string(msg)
 
+    def send_session(self, msg):
+        with self.socket() as socket:
+            socket.send_string(msg)
+
     def shutdown(self):
         self.context.term()

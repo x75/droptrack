@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import random, string, time
+import random, string, time, json
 import atexit
 from logging import Formatter
 from logging.handlers import SysLogHandler
@@ -10,6 +10,7 @@ from flask import (
     current_app,
     flash,
     g,
+    jsonify,
     make_response,
     Response,
     request,
@@ -85,8 +86,16 @@ def url():
     if request.method == 'POST':
         url = request.form.get('url')
         if validate_url(url):
-            current_app.queue.send(url)
-            flash('JUHUUU Erfolg!')
+            if 'username' in request.cookies:
+                username = request.cookies["username"]
+                jsonstr = jsonify({'url': url, 'username': username})
+                print(f'    url jsonstr {jsonstr}')
+                current_app.queue.send(jsonstr)
+                erfolg = f'JUHUUU Erfolg! {username}'
+            else:
+                current_app.queue.send(url)
+                erfolg = 'JUHUUU Erfolg!'
+            flash(erfolg)
         else:
             flash('Sorry, this did not work. Please try again')
     return redirect('/')
@@ -143,6 +152,7 @@ def trackdl():
     return send_from_directory('data/download', path)
 
 def track():
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
     if request.method == 'POST':
         # print(f'track, got post {request}')
         trackid = int(request.form.get('trackid'))
@@ -156,9 +166,11 @@ def track():
         mode = "show"
     print(f'    track: session {session.keys()}')
     print(f'    track: cookies {request.cookies.keys()}')
-    if 'user' not in request.cookies:
-        # request.cookies.put
-        resp.set_cookie('username', 'the username')
+    
+    # if 'user' not in request.cookies:
+    #     # request.cookies.put
+    #     resp.set_cookie('username', 'the username')
+        
     # load tracks
     tracklist = pd.read_csv('data/player_trackstore.csv')
     # get track
@@ -175,6 +187,7 @@ def upload():
     """
     Accept soundfile upload
     """
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
     if request.method == 'POST':
         soundfile = request.files.get('soundfile')
         print(f'    upload from soundfile {soundfile}')
@@ -186,8 +199,18 @@ def upload():
             )
             soundfile.save(location)
             url = url_for('download', filename=filename, _external=True)
-            current_app.queue.send(url)
-            flash('JUHUUU Erfolg!')
+            if 'username' in request.cookies:
+                username = request.cookies["username"]
+                # jsonstr = jsonify({'url': url, 'username': username})
+                jsonstr = json.dumps({'url': url, 'username': username})
+                print(f'    upload jsonstr {jsonstr}')
+                current_app.queue.send(jsonstr)
+                erfolg = f'JUHUUU Erfolg! {username}'
+            else:
+                erfolg = 'JUHUUU Erfolg!'
+                jsonstr = url
+            current_app.queue.send(jsonstr)
+            flash(erfolg)
         else:
             flash('Sorry. Upload Failed.')
 

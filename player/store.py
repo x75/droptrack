@@ -1,3 +1,4 @@
+import json
 import requests
 import shutil
 import os, glob
@@ -67,11 +68,18 @@ class Store(object):
             
         # self.ts = self.trackstore[self.trackstore_key]
 
-    def download(self, url):
+    def download(self, url, user_session=None):
         """player.Store.download
         """
         print('player.store.download')
         # print('    from url {1} to self.trackstore_dir {0}'.format(self.trackstore_dir, url))
+        if url.startswith('{'):
+            url_dict = json.loads(url)
+            url = url_dict['url']
+            username = url_dict['username']
+        else:
+            username = 'default'
+            
         components = urlparse(url)
         # print('    url components {0}'.format(components))
 
@@ -123,6 +131,7 @@ class Store(object):
                 return filepath
 
         # filename, filepath, trkid, ytid
+        # username = 'default'
         
         # select handler depending on url type    
         if self.from_webapp(url):
@@ -130,6 +139,14 @@ class Store(object):
             filehandle = ''
             filename = path.basename(components.path)
             location = path.join(self.trackstore_dir + handle, filename)
+            
+            # if url.startswith('{'):
+            #     url_dict = json.loads(url)
+            #     url = url_dict['url']
+            #     username = url_dict['username']
+            # else:
+            #     username = 'default'
+            
             command = ['curl', '-s', url, '--output', location]
             # this might also work in case curl is not available
             # self.download_from_webapp(url, location)
@@ -227,11 +244,37 @@ class Store(object):
 
             # self.ts.to_hdf(self.trackstore_filename, self.trackstore_key)
             self.ts.to_csv(self.trackstore_filename, index=False)
+
+            row_user = self.ts.loc[trkid].to_dict()
+            print(f'    download row_user {row_user}')
+            trackstore_user_filename = f'{self.trackstore_filename[:-4]}_{username}.csv' 
+            try:
+                ts_user = pd.read_csv(trackstore_user_filename, header=0, sep=',')
+                # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
+                # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
+            except Exception as e:
+                print(f'Could not load trackstore_user for user {username} from file at {self.trackstore_filename}')
+                # continue without trackstore
+                # self.trackstore = None
+                # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
+                ts_user = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
+                ts_user.to_csv(trackstore_user_filename, index=False)
+
+            ts_user = ts_user.append(row_user, ignore_index=True)
+            ts_user.to_csv(trackstore_user_filename)
                 
             return filepath # path.join(self.trackstore_dir + handle, filename)
 
     def from_webapp(self, url):
         for w in self.webapps:
+            print(f'    from_webapp "{url}"')
+            if url.startswith('{'):
+                url_dict = json.loads(url)
+                url = url_dict['url']
+                username = url_dict['username']
+            else:
+                username = 'default'
+                
             print('player.store from_webapp url {0}, w {1}'.format(url, w))
             if url.startswith(w):
                 return True
