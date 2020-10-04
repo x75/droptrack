@@ -2,7 +2,16 @@
 {% block content %}
     {% if result %}
         <article class="error">{{ result.message }}</article>
-    {% endif %}
+	{% endif %}
+
+<div style="position: relative; top: 20px">
+  <div style="font-family: sans;"><p style="font-weight: bold">droptrack | <a href="/tracklist">tracklist</a></p></div>
+  <div style="font-family: sans"><p>hello '{{ username }}'</p></div>
+  <div style="font-family: sans"><p>upload a file from url or local</p></div>
+  <!-- div style="font-family: sans"><p>-</p></div -->
+</div>
+
+<div style="position: relative; top: 20px">
     <form action="url" method="POST">
         <input name="url" type="url" placeholder="URL of soundfile"/>
         <input type="submit" />
@@ -11,6 +20,7 @@
         <input name="soundfile" type="file" accept="audio/*" placeholder="Upload Soundfile"/>
         <input type="submit" value="Upload" />
     </form>
+</div>
 {% endblock %}
 
     {% block content2 %}

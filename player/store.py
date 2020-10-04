@@ -157,7 +157,7 @@ class Store(object):
         else:
             raise PlayerError('    Error: unknown url type {0}'.format(components.netloc))
 
-        # run the command
+        # run the download command
         try:
             print('    running command {0}'.format(command))
             run(command, check=True)
@@ -238,6 +238,27 @@ class Store(object):
         return False
 
     def download_from_webapp(self, url, location):
+        """download from webapp
+
+        means "download" file that was uploaded into webapp
+        """
+        # default track id
+        trkid = -1
+        # try to get trackinfo from store
+        trackinfo = self.ts[self.ts.url == url]
+
+        # track is in the store
+        if len(trackinfo) > 0:
+            # track is in the store and file does not exist
+            trkid = int(trackinfo['id'].astype(object))
+            filepath = str(trackinfo.filepath.tolist()[0])
+            # print('    found filename {0}'.format(filename))
+            # print('    found filepath {0}'.format(filepath))
+            
+            # track is in the store and file exists            
+            if os.path.exists(filepath):
+                return filepath
+
         with requests.get(url, stream=True) as r:
             with open(location, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import random, string, time
 import atexit
 from logging import Formatter
 from logging.handlers import SysLogHandler
@@ -8,11 +9,14 @@ from flask import (
     Flask,
     current_app,
     flash,
+    g,
+    make_response,
     Response,
     request,
     render_template,
     redirect,
     send_from_directory,
+    session,
     url_for,
 )
 from .lib import (
@@ -29,14 +33,55 @@ try:
 except KeyError:
     APP_ENV = 'config.Config'
 
+def generate_username(length=4):
+    letters = string.ascii_lowercase
+    result_str = ''.join(random.choice(letters) for i in range(length))
+    print("    generate_username: random string of length", length, "is:", result_str)
+    return result_str
+
+def store_user_session(username):
+    user_session_log_file = 'data/user_session_log.csv'
+    user_session_log = pd.read_csv(user_session_log_file, sep=',', header=0)
+    if len(user_session_log.index) < 1:
+        user_session_log_max_idx = -1
+    else:
+        user_session_log_max_idx = user_session_log.index[-1]
+    print(f'    store_user_session user_session_log {user_session_log}\n    user_session_log_max_idx {user_session_log_max_idx}')
+    datetime = time.strftime('%Y-%m-%d %H:%M:%S')
+    IP = request.remote_addr
+    row = {'username': username, 'datetime': datetime, 'IP': IP}
+    userid = user_session_log_max_idx + 1
+    print(f'    store_user_session insert row {row}\n    at loc[{userid}]')
+    # user_session_log = user_session_log.loc[userid] = row
+    user_session_log = user_session_log.append(row, ignore_index=True)
+    user_session_log.to_csv(user_session_log_file)
+    return
 
 def root():
-    return render_template('url.html')
+    # check if username in session cookie
+    if 'username' not in request.cookies:
+        username = generate_username(4)
+        print(f'creating username {username}')
+
+        store_user_session(username)
+    else:
+        username = request.cookies["username"]
+        print(f'getting cookie {username}')
+
+    # create response
+    resp = make_response(render_template('url.html', username=username))
+
+    # set cookie on response
+    if 'username' not in request.cookies:        
+        print(f'setting cookie[username] to {username}')
+        resp.set_cookie('username', username)
+    return resp
 
 def url():
     """
     Accept soundfile url
     """
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
     if request.method == 'POST':
         url = request.form.get('url')
         if validate_url(url):
@@ -89,6 +134,8 @@ def run_autoedit(args):
 
     autoedit_res = main_autoedit(args)
         
+    print(f'run_autoedit res {autoedit_res}')
+    
     return autoedit_res
 
 def trackdl():
@@ -107,6 +154,11 @@ def track():
             return redirect('/tracklist')
         trackid = int(trackid)
         mode = "show"
+    print(f'    track: session {session.keys()}')
+    print(f'    track: cookies {request.cookies.keys()}')
+    if 'user' not in request.cookies:
+        # request.cookies.put
+        resp.set_cookie('username', 'the username')
     # load tracks
     tracklist = pd.read_csv('data/player_trackstore.csv')
     # get track
@@ -116,7 +168,7 @@ def track():
         autoedit_res = run_autoedit(track)
     else:
         autoedit_res = {'filename': None, 'length': None, 'segs': None}
-    print(f'track: autoedit_res {autoedit_res}')
+    print(f'    track: autoedit_res {autoedit_res}')
     return render_template('track.html', name="opt", tracklist=track, autoedit_res=autoedit_res)
 
 def upload():
@@ -125,6 +177,7 @@ def upload():
     """
     if request.method == 'POST':
         soundfile = request.files.get('soundfile')
+        print(f'    upload from soundfile {soundfile}')
         if validate_soundfile(soundfile):
             filename = secure_filename(soundfile.filename)
             location = os.path.join(
@@ -149,6 +202,9 @@ def download(filename):
     )
 
 
+def data_serve_static():
+    print(f'dir request {dir(request)}')
+
 def setup_routes(app):
     url.methods = ['GET', 'POST']
     upload.methods = ['POST']
@@ -156,6 +212,7 @@ def setup_routes(app):
     
     app.add_url_rule('/', 'root', root)
     app.add_url_rule('/url', 'url', url)
+    # app.add_url_rule('/data', 'data', data_serve_static)
     app.add_url_rule('/soundfile', 'upload', upload)
     app.add_url_rule('/soundfile/<path:filename>', 'download', download)
     app.add_url_rule('/track', 'track', track)

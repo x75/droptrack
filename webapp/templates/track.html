@@ -61,7 +61,11 @@
   {% for k in autoedit_res %}
     <tr>
       <td style="font-family: sans">
+	{% if k == "filename" %}
+	{{ k }} - <a href="http://localhost/droptrack/{{ autoedit_res[k] }}">{{ autoedit_res[k]|string|truncate(100) }}</a>
+	{% else %}
 	{{ k }} - {{ autoedit_res[k]|string|truncate(100) }}
+	{% endif %}
       </td>
       {% endfor %}
     </tr>
