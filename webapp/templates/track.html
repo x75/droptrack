@@ -82,22 +82,33 @@
     <div style="position: relative; top: 20px; font-family: sans">
       <span style="font-weight: bold">autoedit tables</span>
     </div>
+
+    <!-- <div style="position: relative; top: 20px; font-family: sans"> -->
+    <!--   <span style="font-weight: bold">autoedit to_html</span> -->
+    <!--   <div> -->
+    <!-- 	{{ autoedit_results.sort_index(ascending=False).to_html() }} -->
+    <!--   </div> -->
+    <!-- </div> -->
     
     <div style="position: relative; top: 20px; font-family: sans">
-      {% for rowidx, rowdata in ts_autoedit.sort_index(ascending=False).iterrows() %}
+      {% for rowidx, rowdata in autoedit_results.sort_index(ascending=False).iterrows() %}
       <div style="position: relative; top: 0px; font-family: sans">
 	<hr />
 	<table>
-	  {% for fielddata in rowdata %}
+	  {% for fieldkey in rowdata.to_dict() %}
+	  {% if fieldkey in ['length', 'segs', 'filename_', 'numsegs'] %}
+	  {% else %}
 	  <tr>
+	    <td>{{fieldkey}}</td>
 	    <td style="font-family: sans">
-	      {% if loop.index == 2 %}
-	      <a href="http://localhost/droptrack/{{fielddata}}">{{ fielddata|string|truncate(20) }}</a>
+	      {% if fieldkey in ['filename_export', 'autoedit_graph'] %}
+	      <a href="http://localhost/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
 	      {% else %}
-	      {{ fielddata|string|truncate(20) }}
+	      {{ rowdata[fieldkey]|string|truncate(25) }}
 	      {% endif %}
 	    </td>
 	  </tr>
+	  {% endif %}
 	  {% endfor %}
 	</table>
       </div>

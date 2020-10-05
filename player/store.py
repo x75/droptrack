@@ -15,6 +15,9 @@ import audioread
 import numpy as np
 import pandas as pd
 
+from webapp.libdata import data_conf
+from webapp.libdata import data_init, data_get_columns, data_get_index_next, data_append_row, data_write
+
 def get_filefp(filepath):
     duration, fp_encoded = acoustid.fingerprint_file(filepath)
     fingerprint, version = chromaprint.decode_fingerprint(fp_encoded)
@@ -53,20 +56,24 @@ class Store(object):
 
         # init track store
         # self.trackstore_filename = 'data/player_trackstore.csv'
-        self.trackstore_filename = 'data/player_trackstore_default.csv'
-        self.trackstore_filename_base = 'data/player_trackstore'
+        self.trackstore_filename = data_conf['trackstore_filename'] # 'data/player_trackstore_default.csv'
+        self.trackstore_filename_base = data_conf['trackstore_filename_base'] 
         self.trackstore_key = 'miniclub6'
-        try:
-            self.ts = pd.read_csv(self.trackstore_filename)
-            # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
-            # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
-        except Exception as e:
-            print('Could not load trackstore from file at {0}'.format(self.trackstore_filename))
-            # continue without trackstore
-            # self.trackstore = None
-            # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
-            self.ts = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
-            self.ts.to_csv(self.trackstore_filename, index=False)
+        self.ts = data_init(
+            columns=data_conf['trackstore_columns'],
+            filename=self.trackstore_filename)
+        
+        # try:
+        #     self.ts = pd.read_csv(self.trackstore_filename)
+        #     # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
+        #     # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
+        # except Exception as e:
+        #     print('Could not load trackstore from file at {0}'.format(self.trackstore_filename))
+        #     # continue without trackstore
+        #     # self.trackstore = None
+        #     # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
+        #     self.ts = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
+        #     self.ts.to_csv(self.trackstore_filename, index=False)
             
         # self.ts = self.trackstore[self.trackstore_key]
 
@@ -95,12 +102,15 @@ class Store(object):
 
         # try to get trackinfo from store
         trackinfo = self.ts[self.ts.url == url]
-        # print('    trackinfo length = {0}'.format(len(trackinfo)))
-        # print('    {0}'.format(trackinfo.values))
+        print('    trackinfo length = {0}'.format(len(trackinfo)))
+        print('    {0}'.format(trackinfo.values))
         # print('player.store download trackinfo\n    \'{0}\''.format(trackinfo['filename'].tolist()[0]))
         
         # if track is in the store already
         if len(trackinfo) > 0:
+            if len(trackinfo) > 1:
+                trackinfo = list(trackinfo)[-1]
+            
             # filename = str(trackinfo.filename.tolist()[0])
             # track is in the store and file does not exist
             trkid = int(trackinfo['id'].astype(object))
@@ -224,60 +234,74 @@ class Store(object):
 
             # not in store
             if trkid == -1:
-                # not in store but store has entries
-                if len(self.ts) > 0:
-                    # trkid = self.ts.index.max() + 1
-                    trkid = int(self.ts['id'].max() + 1)
-                # store is empty
-                else:
-                    trkid = 1
+                
+                # # not in store but store has entries
+                # if len(self.ts) > 0:
+                #     # trkid = self.ts.index.max() + 1
+                #     trkid = int(self.ts['id'].max() + 1)
+                # # store is empty
+                # else:
+                #     trkid = 1
 
+                trkid = data_get_index_next(self.ts, indexcol='id')
+                    
                 # compose new row
                 row = [trkid, url, filename, filepath, filelength, filefp, filehash]
+                rowdict = dict(zip(data_conf['trackstore_columns'], row))
                 print(f'    insert row {row}')
-                self.ts.loc[trkid] = row
+                # self.ts.loc[trkid] = row
+                self.ts = data_append_row(rowdict, self.ts)
             # in store but new download on file not found
             else:
-                self.ts.loc[trkid]['filename'] = filename
-                self.ts.loc[trkid]['filepath'] = filepath
-                self.ts.loc[trkid]['filelength'] = filelength
-                self.ts.loc[trkid]['filefp'] = filefp
-                self.ts.loc[trkid]['filehash'] = filehash
+                self.ts[self.ts['id'] == trkid]['filename'] = filename
+                self.ts[self.ts['id'] == trkid]['filepath'] = filepath
+                self.ts[self.ts['id'] == trkid]['filelength'] = filelength
+                self.ts[self.ts['id'] == trkid]['filefp'] = filefp
+                self.ts[self.ts['id'] == trkid]['filehash'] = filehash
 
             # self.ts.to_hdf(self.trackstore_filename, self.trackstore_key)
-            self.ts.to_csv(self.trackstore_filename, index=False)
+            # self.ts.to_csv(self.trackstore_filename, index=False)
+            data_write(self.ts, self.trackstore_filename)
 
-            row_user = self.ts.loc[trkid] # .to_dict()
+            # row_user = self.ts[self.ts['id'] == trkid] # .to_dict()
+            row_user = self.ts[self.ts['id'] == trkid] # .to_dict()
             # del row_user['id']
             print(f'    download {trkid} row_user {row_user}')
-            trackstore_user_filename = f'{self.trackstore_filename_base}_{username}.csv' 
-            try:
-                ts_user = pd.read_csv(trackstore_user_filename, header=0, sep=',')
-                # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
-                # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
-            except Exception as e:
-                print(f'Could not load trackstore_user for user {username} from file at {trackstore_user_filename}')
-                # continue without trackstore
-                # self.trackstore = None
-                # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
-                ts_user = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
-                ts_user.to_csv(trackstore_user_filename, index=False)
+            trackstore_user_filename = f'{self.trackstore_filename_base}_{username}.csv'
+            ts_user = data_init(
+                columns=data_conf['trackstore_columns'],
+                filename=trackstore_user_filename)
+            
+            # try:
+            #     ts_user = pd.read_csv(trackstore_user_filename, header=0, sep=',')
+            #     # self.trackstore = pd.HDFStore(self.trackstore_filename, mode='a')
+            #     # self.ts = pd.read_hdf(self.trackstore_filename, self.trackstore_key)
+            # except Exception as e:
+            #     print(f'Could not load trackstore_user for user {username} from file at {trackstore_user_filename}')
+            #     # continue without trackstore
+            #     # self.trackstore = None
+            #     # self.trackstore = pd.DataFrame(columns=['id', 'url', 'filename', 'filepath', 'length', 'fingerprint', 'hash'])
+            #     ts_user = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
+            #     ts_user.to_csv(trackstore_user_filename, index=False)
 
             # ts_user = pd.DataFrame(ts_user)
                 
-            trkid_user = int(ts_user['id'].max() + 1)
+            # trkid_user = int(ts_user['id'].max() + 1)
+            trkid_user = data_get_index_next(ts_user, indexcol='id')
             row_user['id'] = trkid_user
-            print(f'    download trkid_user {trkid_user} row_user {row_user}')
             
+            print(f'    download trkid_user {trkid_user} row_user {row_user}')
             print(f'    download type(ts_user) {type(ts_user)}')
             print(f'    download ts_user df {ts_user.columns}, {ts_user.shape}')
 
             # ts_user = ts_user.append(row_user, ignore_index=True)
-            ts_user.loc[trkid_user] = row_user.to_list()
+            # ts_user.loc[trkid_user] = row_user.to_list()
+            ts_user = data_append_row(row_user, ts_user)
 
             print(f'    download {ts_user.columns}, {ts_user.shape}')
 
-            ts_user.to_csv(trackstore_user_filename, index=False)
+            # ts_user.to_csv(trackstore_user_filename, index=False)
+            data_write(ts_user, trackstore_user_filename)
                 
             return filepath # path.join(self.trackstore_dir + handle, filename)
 
