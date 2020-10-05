@@ -4,16 +4,40 @@
 <article class="error">{{ result.message }}</article>
 {% endif %}
 
-<div style="position: relative; top: 20px">
-  <div style="font-family: sans;"><p>session <span style="font-weight: bold">{{ username }}</span></p></div>
-  <div style="font-family: sans;"><p style="font-weight: bold">droptrack | <a href="/tracklist">tracklist</a></p></div>
-  <div style="font-family: sans"><p>upload form and common track database</p></div>
-  <div style="font-family: sans"><p>workflow: 1) upload your track, 2) select track(s) from the list, 3) select operation, 4) run the thing, form action is autosuite flask app</p></div>
-  <div style="font-family: sans"><p>upload a file from url or local</p></div>
-  <!-- div style="font-family: sans"><p>-</p></div -->
+<div style="position: relative; top: -14px">
+  <table>
+    <tr style="font-family: sans; font-weight: normal">
+      <td>session</td>
+      <td>app</td>
+    </tr>
+    <tr>
+      <td><span style="font-family: sans; font-weight: bold">{{ username }}</span></td>
+      <td><span style="font-family: sans; font-weight: bold">droptrack | <a href="/tracklist">tracklist</a></span></td>
+    </tr>
+  </table>
+  <div style="font-family: sans">
+    <table>
+      <tr>
+	<td></td>
+	<td>workflow</td>
+      </tr>
+      <tr>
+	<td>1)</td>
+	<td>upload your track from url or file</td>
+      </tr>
+      <tr>
+	<td>2)</td>
+	<td>select a track from the list of uploads</td>
+      </tr>
+      <tr>
+	<td>3)</td>
+	<td>run autoedit on that track</td>
+      </tr>
+      </table>
+  </div>
 </div>
 
-<div style="position: relative; top: 20px">
+<div style="position: relative; top: -10px">
   <form action="url" method="POST">
     <input name="url" type="url" placeholder="URL of soundfile"/>
     <input type="submit" />
@@ -26,11 +50,11 @@
 {% endblock %}
 
 {% block content2 %}
-<div style="position: relative; top: 20px">
-  <div style="font-family: sans;"><p style="font-weight: bold">tracklist default</p></div>
-  <div style="font-family: sans"><p>display the track database here</p></div>
+<div style="position: relative; top: 0px">
+  <div style="font-family: sans;"><p style="font-weight: bold">tracklist {{ username }}</p></div>
 </div>
-<div style="position: relative; top: 20px">
+
+<div style="position: relative; top: 0px">
   <table>
     <tr>
     {% for field in tracklist.columns %}
@@ -40,7 +64,7 @@
     {% endfor %}
     </tr>
     
-    {% for rowidx, rowdata in tracklist.iterrows() %}
+    {% for rowidx, rowdata in tracklist.sort_index(ascending=False).iterrows() %}
     <tr>
       {% for fielddata in rowdata %}
       <td style="font-family: sans">

@@ -1,6 +1,17 @@
 import pandas as pd
 import numpy as np
 
+data_conf = {
+    'user_session_log_file': 'data/user_session_log.csv',
+    'user_session_columns': ['username', 'datetime', 'IP'],
+    'trackstore_filename_base': 'data/player_trackstore',
+    'trackstore_filename': 'data/player_trackstore_default.csv',
+    'trackstore_columns': ['id', 'url','filename','filepath','length','fingerprint','hash'],
+    'autoedit_response_columns': ['id', 'filename_export', 'length',
+                                  'segs', 'final_duration',
+                                  'seg_s','filename_','numsegs','autoedit_graph'] # , 'datetime'
+}
+    
 def data_init(columns=[], filename=None):
     df = None
     if filename is not None:
@@ -19,6 +30,17 @@ def data_init(columns=[], filename=None):
 
 def data_get_columns(df):
     return df.columns
+
+def data_get_index_next(df, indexcol=None):
+    if len(df.index) < 1:
+        df_max_idx = -1
+    else:
+        if indexcol is None:
+            df_max_idx = df.index[-1]
+        else:
+            df_max_idx = df[indexcol].max()
+            
+    return int(df_max_idx + 1)
 
 def data_append_row(data, df):
     df = df.append(data, ignore_index=True)
