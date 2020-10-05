@@ -77,8 +77,16 @@ def root():
         print(f'getting cookie {username}')
 
     # default tracklist
-    tracklist = pd.read_csv('{0}_{1}.csv'.format(conf['trackstore_filename_base'], username))
-    print(f'tracklist {tracklist.columns} {tracklist.shape}')
+    tracklist_filename = '{0}_{1}.csv'.format(conf['trackstore_filename_base'], username)
+    try:
+        tracklist = pd.read_csv(tracklist_filename)
+        print(f'tracklist {tracklist.columns} {tracklist.shape}')
+    except Exception as e:
+        print(e)
+        tracklist = pd.DataFrame({'id': 0, 'url': 'none', 'filename': 'dummy', 'filepath': 'dummy', 'length': 0, 'fingerprint': '', 'hash': ''}, index=pd.Index([0]))
+        tracklist.to_csv(tracklist_filename, index=False)
+
+        # tracklist = pd.DataFrame(columns=[])
 
     # create response
     resp = make_response(render_template('url.html', username=username, tracklist=tracklist))
