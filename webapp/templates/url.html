@@ -4,22 +4,24 @@
 <article class="error">{{ result.message }}</article>
 {% endif %}
 
-<div style="position: relative; top: -14px">
-  <table style="border: 1px solid black; width: 400px;">
-    <tr style="font-family: sans; font-weight: normal">
-      <td>app</td>
-      <td style="text-align: right">session</td>
+<div style="position: relative; top: 0px">
+  <table class="dt-table-1">
+    <tr class="dt-table-row-1">
+      <td class="dt-table-col-left">app</td>
+      <td class="dt-table-col-right">session</td>
     </tr>
     <tr>
-      <td><span style="font-family: sans; font-weight: bold">droptrack | <a href="{{ base_path }}/tracklist">tracklist</a></span></td>
-      <td style="text-align: right">
-	<span style="font-family: sans; font-weight: bold">{{ username }}</span>
-	<span style="font-family: sans; font-weight: normal"><a href="{{base_path}}/setsession">c</a></span>
+      <td>
+	<span class="dt-text-bold">droptrack | <a href="{{ base_path }}/tracklist">tracklist</a></span>
+      </td>
+      <td class="dt-table-col-right">
+	<span class="dt-text-bold">{{ username }}</span>
+	<span class="dt-text-normal"><a href="{{base_path}}/setsession">c</a></span>
       </td>
     </tr>
   </table>
-  <div style="font-family: sans">
-    <table style="border: 1px solid lightgray; width: 400px;">
+  <div class="dt-text-normal">
+    <table class="dt-table-2">
       <tr>
 	<td>1</td>
 	<td>upload your track from url or file</td>
@@ -36,7 +38,8 @@
   </div>
 </div>
 
-<div style="position: relative; top: -10px">
+<div style="position: relative; top: 0px; width: 100%">
+  <p></p>
   <form action="{{base_path}}/url" method="POST">
     <input name="url" type="url" placeholder="URL of soundfile"/>
     <input type="submit" />
@@ -51,13 +54,13 @@
 {% block content2 %}
 {% if True %}
 <div style="position: relative; top: 0px">
-  <div style="font-family: sans; font-weight: bold;"><p>user track database</p></div>
-  <table>
+  <div class="dt-text-bold"><p>user track database</p></div>
+  <table class="dt-table-tracklist">
     <tr>
       {% for field in tracklist.columns %}
       {% if field in ['url', 'filepath', 'fingerprint', 'hash'] %}
       {% else %}
-      <td style="font-family: sans; font-weight: bold">
+      <td class="dt-text-bold">
 	{{ field }}
       </td>
       {% endif %}
@@ -68,16 +71,16 @@
     <tr>
       {% for fieldkey in rowdata.to_dict() %}
       {% if fieldkey in ['id'] %}
-      <td style="font-family: sans">
+      <td class="dt-text-normal">
 	<a href="{{ base_path }}/track?trackid={{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
       </td>
       {% elif fieldkey in ['url', 'filepath', 'fingerprint', 'hash'] %}
       {% elif fieldkey in ['length'] %}
-      <td style="font-family: sans; text-align: right">
+      <td class="dt-table-col-right">
       {{ '%0.2f'| format(rowdata[fieldkey])|float }}
       </td>
       {% else %}
-      <td style="font-family: sans">
+      <td class="dt-text-normal">
       {{ rowdata[fieldkey]|string|truncate(30) }}
       </td>
       {% endif %}

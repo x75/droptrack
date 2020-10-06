@@ -307,6 +307,11 @@ def upload():
             )
             soundfile.save(location)
             url = url_for('download', filename=filename, _external=True)
+            print(f'    upload saved file url_for {url}')
+            url = f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/soundfile/{filename}'
+            print(f'    upload saved file url_sf {url}')
+            url = f'{request.host_url[:-1]}{current_app.config["BASE_PATH"]}/data/upload/{filename}'
+            print(f'    upload saved file url {url}')
             if 'username' in request.cookies:
                 username = request.cookies["username"]
                 # jsonstr = jsonify({'url': url, 'username': username})
@@ -330,6 +335,13 @@ def download(filename):
         current_app.config['UPLOAD_DIR'],
         filename,
         as_attachment=True
+    )
+
+def assets(filename):
+    return send_from_directory(
+        current_app.config['ASSETS_DIR'],
+        filename,
+        as_attachment=False
     )
 
 def setsession():
@@ -389,6 +401,7 @@ def setup_routes(app):
     app.add_url_rule('/trackdl', 'trackdl', trackdl)
     app.add_url_rule('/tracklist', 'tracklist', tracklist)
     app.add_url_rule('/setsession', 'setsession', setsession)
+    app.add_url_rule('/assets/<path:filename>', 'assets', assets)
 
 def setup_queue(app):
     app.queue = Queue(app.config)

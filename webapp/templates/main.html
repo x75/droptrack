@@ -1,22 +1,30 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>{{ config.APP_NAME }}</title>
-    </head>
-    <body>
-        <section style="width: 400px; margin-left: auto; margin-right: auto">
-            <h1 style="width: 100%; background-color: black; color: white; font-family: sans; font-weight: normal">{{ config.APP_NAME }}</h1>
-            {% with flash = get_flashed_messages() %}
-                {% if flash %}
-                    <article>
-                    {% for message in flash %}<p>{{ message }}</p>{% endfor %}
-                    </article>
-                {% endif %}
-                {% endwith %}
-            {% block content %}
-            {% endblock %}
-            {% block content2 %}
-            {% endblock %}
-        </section>
-    </body>
+  <head>
+    <title>{{ config.APP_NAME }}</title>
+    <link rel="stylesheet" href="/assets/droptrack.css" type="text/css" />
+  </head>
+  <body>
+    <section class="dt-section">
+      <!-- <div style="position: relative; top: 100px; left: 100px" class="logo"></div> -->
+      <!-- <h1 class="dt-h1">{{ config.APP_NAME }}</h1> -->
+      <table style="width: 100%; padding: 0px; border-spacing: 0px">
+	<tr style="background-image: linear-gradient(to right, red , yellow);">
+	  <td style="padding: 10px;">{{ config.APP_NAME }}</td>
+	  <td style="padding: 0px; text-align: right">
+	    <img style="width: 32px" src="/assets/fm_logo_only_transparent_64.png"></td>
+	</tr>
+      {% with flash = get_flashed_messages() %}
+      {% if flash %}
+      <article>
+        {% for message in flash %}<p>{{ message }}</p>{% endfor %}
+      </article>
+      {% endif %}
+      {% endwith %}
+      {% block content %}
+      {% endblock %}
+      {% block content2 %}
+      {% endblock %}
+    </section>
+  </body>
 </html>

@@ -12,6 +12,7 @@ class Config(object):
     API_URL = 'http://' + SERVER_NAME
     UPLOAD_DIR = os.path.join(os.getcwd(), 'data/upload')
     UPLOAD_ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg'} 
+    ASSETS_DIR = os.path.join(os.getcwd(), 'assets')
     ROUTER = 'tcp://127.0.0.1:5100'
 
 class ProductionConfig(Config):

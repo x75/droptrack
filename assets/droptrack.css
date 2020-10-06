@@ -1,0 +1,75 @@
+body {
+    font-family: sans;
+    font-size: 20px;
+    width: auto;
+    /* padding:60px 0 0 0; */
+    /* background-image : url(path_to_logo) no-repeat top left;  */
+}
+
+.logo {
+    width: 64px;
+    height: 64px;
+    background : url("/assets/fm_logo_only_transparent_64.png");
+    /* background : url("https://web.fm/img/fm_logo_only.svg"); */
+}
+
+.dt-section {
+    /* width: 400px; */
+    width: 40%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.dt-h1 {
+    width: 100%;
+    /* background-color: grey; */
+    /* background : url("/assets/fm_logo_only_transparent_64.png"); */
+    background-repeat: repeat-no;
+    background-image: linear-gradient(to right, red , yellow);
+    color: white;
+    font-family: sans;
+    font-weight: normal;
+}
+
+.dt-table-1 {
+    border: 1px solid orange;
+    /* width: 400px; */
+    width: 100%;
+}
+
+.dt-table-2 {
+    border: 1px solid pink;
+    /* width: 400px; */
+    width: 100%;
+}
+
+.dt-table-tracklist {
+    border: 1px solid lightgreen;
+    /* width: 400px; */
+    width: 100%;
+}
+
+.dt-table-row-1 {
+    font-family: sans;
+    font-weight: normal;
+}
+
+.dt-table-col-right {
+    font-family: sans;
+    text-align: right;
+}
+
+.dt-table-col-left {
+    text-align: left;
+}
+
+.dt-text-normal {
+    font-family: sans;
+    font-weight: normal;
+}
+
+.dt-text-bold {
+    font-family: sans;
+    font-weight: bold;
+}
+

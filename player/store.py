@@ -159,7 +159,9 @@ class Store(object):
             # else:
             #     username = 'default'
             
-            command = ['curl', '-s', url, '--output', location]
+            # command = ['curl', '-s', url, '--output', location]
+            # curl with follow redirects enabled
+            command = ['curl', '-s', '--location', url, '--output', location]
             # this might also work in case curl is not available
             # self.download_from_webapp(url, location)
             # return location
