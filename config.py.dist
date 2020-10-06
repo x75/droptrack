@@ -7,10 +7,12 @@ class Config(object):
     DEVELOPMENT = True
     SECRET_KEY = 'secret'
     FLASK_SECRET = SECRET_KEY
+    SERVER_NAME = '127.0.0.1:5000'
+    BASE_PATH = ''
+    API_URL = 'http://' + SERVER_NAME
     UPLOAD_DIR = os.path.join(os.getcwd(), 'data/upload')
     UPLOAD_ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg'} 
     ROUTER = 'tcp://127.0.0.1:5100'
-
 
 class ProductionConfig(Config):
     DEBUG = False

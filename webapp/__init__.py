@@ -85,13 +85,13 @@ def root():
     print(f'tracklist {tracklist.columns} {tracklist.shape}')
 
     # base_path = BASE_PATH # request.path
-    print(f'    webapp root base_path {BASE_PATH}')
+    print(f'    webapp root base_path {current_app.config["BASE_PATH"]}')
     
     # create response
     resp = make_response(
         render_template(
             'url.html', username=username, tracklist=tracklist,
-            base_path=BASE_PATH
+            base_path=current_app.config["BASE_PATH"]
         ))
 
     # set cookie on response
@@ -120,7 +120,7 @@ def url():
             flash(erfolg)
         else:
             flash('Sorry, this did not work. Please try again')
-    return redirect(f'/{BASE_PATH}')
+    return redirect(f'/{current_app.config["BASE_PATH"]}')
 
 def tracklist():
     assert 'username' in request.cookies, 'Require username, please restart app from root level'
@@ -143,7 +143,7 @@ def tracklist():
     return render_template(
         'tracklist.html', tracklist=tracklist,
         tracklist_default=tracklist_default, username=username,
-        base_path=BASE_PATH
+        base_path=current_app.config["BASE_PATH"]
     )
 
 def run_autoedit(args):
@@ -222,7 +222,7 @@ def track():
         trackid = request.args.get('trackid')
         if trackid is None:
             flash('no trackid')
-            return redirect(f'/{BASE_PATH}/tracklist')
+            return redirect(f'/{current_app.config["BASE_PATH"]}/tracklist')
         trackid = int(trackid)
         mode = "show"
     print(f'    track: session {session.keys()}')
@@ -288,7 +288,7 @@ def track():
     return render_template(
         'track.html', name="opt", tracklist=track, username=username,
         autoedit_res=autoedit_res, autoedit_results=autoedit_results,
-        base_path=BASE_PATH
+        base_path=current_app.config["BASE_PATH"]
     )
 
 def upload():
@@ -322,7 +322,7 @@ def upload():
         else:
             flash('Sorry. Upload Failed.')
 
-    return redirect(f'/{BASE_PATH}/')
+    return redirect(f'/{current_app.config["BASE_PATH"]}/')
 
 
 def download(filename):
