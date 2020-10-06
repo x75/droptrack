@@ -84,14 +84,14 @@ def root():
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     print(f'tracklist {tracklist.columns} {tracklist.shape}')
 
-    base_path = BASE_PATH # request.path
-    print(f'    webapp root base_path {base_path}')
+    # base_path = BASE_PATH # request.path
+    print(f'    webapp root base_path {BASE_PATH}')
     
     # create response
     resp = make_response(
         render_template(
             'url.html', username=username, tracklist=tracklist,
-            base_path=base_path
+            base_path=BASE_PATH
         ))
 
     # set cookie on response
@@ -140,7 +140,11 @@ def tracklist():
     tracklist_filename_default = '{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], 'default')
     tracklist_default = data_init(data_conf['trackstore_columns'], tracklist_filename_default)
 
-    return render_template('tracklist.html', tracklist=tracklist, tracklist_default=tracklist_default, username=username)
+    return render_template(
+        'tracklist.html', tracklist=tracklist,
+        tracklist_default=tracklist_default, username=username,
+        base_path=BASE_PATH
+    )
 
 def run_autoedit(args):
     assert 'username' in request.cookies, 'Require username, please restart app from root level'
@@ -281,7 +285,11 @@ def track():
         data_write(autoedit_results, autoedit_results_filename)
 
     # print(f'    track: autoedit_res {autoedit_res}')
-    return render_template('track.html', name="opt", tracklist=track, username=username, autoedit_res=autoedit_res, autoedit_results=autoedit_results)
+    return render_template(
+        'track.html', name="opt", tracklist=track, username=username,
+        autoedit_res=autoedit_res, autoedit_results=autoedit_results,
+        base_path=BASE_PATH
+    )
 
 def upload():
     """

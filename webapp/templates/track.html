@@ -5,8 +5,8 @@
 
 <div style="position: relative; top: 20px">
   <div style="font-family: sans;"><p>session <span style="font-weight: bold">{{ username }}</span></p></div>
-  <div style="font-family: sans;"><p style="font-weight: bold"><a href="/url">droptrack</a> | <a href="/tracklist">tracklist</a></p></div>
-  <div style="font-family: sans;"><p style="font-weight: bold">track detail id <a href="/track?trackid={{ tracklist['id'] }}">{{ tracklist['id'] }}</a></p></div>
+  <div style="font-family: sans;"><p style="font-weight: bold"><a href="{{ base_path }}/url">droptrack</a> | <a href="{{ base_path }}/tracklist">tracklist</a></p></div>
+  <div style="font-family: sans;"><p style="font-weight: bold">track detail id <a href="{{ base_path }}/track?trackid={{ tracklist['id'] }}">{{ tracklist['id'] }}</a></p></div>
   <!-- <div style="font-family: sans"> -->
   <!--   <p>workflow: 1) upload your track, 2) select track(s) from the list, 3) select operation, 4) run the thing</p> -->
   <!--   <p>form action is autosuite flask app</p> -->
@@ -102,8 +102,7 @@
 	    <td>{{fieldkey}}</td>
 	    <td style="font-family: sans">
 	      {% if fieldkey in ['filename_export', 'autoedit_graph'] %}
-	      <!-- a href="http://localhost/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a -->
-	      <a href="http://soup.jetpack.cl/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
+	      <a href="/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
 	      {% else %}
 	      {{ rowdata[fieldkey]|string|truncate(25) }}
 	      {% endif %}
