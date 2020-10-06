@@ -120,7 +120,7 @@ def url():
             flash(erfolg)
         else:
             flash('Sorry, this did not work. Please try again')
-    return redirect('/')
+    return redirect(f'/{BASE_PATH}')
 
 def tracklist():
     assert 'username' in request.cookies, 'Require username, please restart app from root level'
@@ -222,7 +222,7 @@ def track():
         trackid = request.args.get('trackid')
         if trackid is None:
             flash('no trackid')
-            return redirect('/tracklist')
+            return redirect(f'/{BASE_PATH}/tracklist')
         trackid = int(trackid)
         mode = "show"
     print(f'    track: session {session.keys()}')
@@ -322,7 +322,7 @@ def upload():
         else:
             flash('Sorry. Upload Failed.')
 
-    return redirect('/')
+    return redirect(f'/{BASE_PATH}/')
 
 
 def download(filename):
