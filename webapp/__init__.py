@@ -183,7 +183,6 @@ def run_autoedit(args):
     track = tracklist[tracklist['id'] == trackid].squeeze()
     print(f'    run_autoedit track {track}')
 
-
     # filename = track.filename
         
     args.filenames = [track.filepath]
@@ -238,10 +237,9 @@ def track():
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     # get track
     # track = tracklist.loc[trackid].to_dict()
-    # print(f'    track track {track}\nmode {mode}')
+    # track = tracklist[tracklist['id'] == trackid].to_dict()
     track = tracklist[tracklist['id'] == trackid].squeeze().to_dict()
-    # track = track_.loc[track_.index[0]]
-    print(f'    track track {track}\nmode {mode}')
+    print(f'track {track}\nmode {mode}')
 
     autoedit_res = {
         'filename_export': None, 'length': None,
