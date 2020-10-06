@@ -36,6 +36,9 @@ try:
 except KeyError:
     APP_ENV = 'config.Config'
 
+# BASE_PATH='/droptrack'
+BASE_PATH=''
+    
 def generate_username(length=4):
     letters = string.ascii_lowercase
     result_str = ''.join(random.choice(letters) for i in range(length))
@@ -81,8 +84,15 @@ def root():
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     print(f'tracklist {tracklist.columns} {tracklist.shape}')
 
+    base_path = BASE_PATH # request.path
+    print(f'    webapp root base_path {base_path}')
+    
     # create response
-    resp = make_response(render_template('url.html', username=username, tracklist=tracklist))
+    resp = make_response(
+        render_template(
+            'url.html', username=username, tracklist=tracklist,
+            base_path=base_path
+        ))
 
     # set cookie on response
     if 'username' not in request.cookies:        

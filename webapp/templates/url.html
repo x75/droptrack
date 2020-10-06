@@ -5,32 +5,28 @@
 {% endif %}
 
 <div style="position: relative; top: -14px">
-  <table>
+  <table style="border: 1px solid black; width: 400px;">
     <tr style="font-family: sans; font-weight: normal">
-      <td>session</td>
       <td>app</td>
+      <td style="text-align: right">session</td>
     </tr>
     <tr>
-      <td><span style="font-family: sans; font-weight: bold">{{ username }}</span></td>
-      <td><span style="font-family: sans; font-weight: bold">droptrack | <a href="/tracklist">tracklist</a></span></td>
+      <td><span style="font-family: sans; font-weight: bold">droptrack | <a href="{{ base_path }}/tracklist">tracklist</a></span></td>
+      <td style="text-align: right"><span style="font-family: sans; font-weight: bold">{{ username }}</span></td>
     </tr>
   </table>
   <div style="font-family: sans">
-    <table>
+    <table style="border: 1px solid black; width: 400px;">
       <tr>
-	<td></td>
-	<td>workflow</td>
-      </tr>
-      <tr>
-	<td>1)</td>
+	<td>1</td>
 	<td>upload your track from url or file</td>
       </tr>
       <tr>
-	<td>2)</td>
+	<td>2</td>
 	<td>select a track from the list of uploads</td>
       </tr>
       <tr>
-	<td>3)</td>
+	<td>3</td>
 	<td>run autoedit on that track</td>
       </tr>
       </table>
