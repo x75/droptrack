@@ -1,0 +1,33 @@
+{% extends "main.html" %}
+{% block content %}
+{% if result %}
+<article class="error">{{ result.message }}</article>
+{% endif %}
+
+<div style="position: relative; top: -14px">
+  <table style="border: 1px solid black; width: 400px;">
+    <tr style="font-family: sans; font-weight: normal">
+      <td>app</td>
+      <td style="text-align: right">session</td>
+    </tr>
+    <tr>
+      <td><span style="font-family: sans; font-weight: bold">droptrack | <a href="{{ base_path }}/tracklist">tracklist</a></span></td>
+      <td style="text-align: right">
+	<span style="font-family: sans; font-weight: bold">{{ username }}</span>
+	<span style="font-family: sans; font-weight: normal"><a href="{{base_path}}/setsession">c</a></span>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div style="position: relative; top: -10px">
+  <span style="font-family: sans; font-weight: normal;">switch session using key</span>
+  <form action="{{base_path}}/setsession" method="POST">
+    <input name="sessionkey" type="text" placeholder="session key"/>
+    <input type="submit" value="change"/>
+  </form>
+</div>
+{% endblock %}
+
+{% block content2 %}
+{% endblock %}

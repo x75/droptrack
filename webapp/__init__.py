@@ -120,7 +120,7 @@ def url():
             flash(erfolg)
         else:
             flash('Sorry, this did not work. Please try again')
-    return redirect(f'/{current_app.config["BASE_PATH"]}')
+    return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/')
 
 def tracklist():
     assert 'username' in request.cookies, 'Require username, please restart app from root level'
@@ -178,7 +178,11 @@ def run_autoedit(args):
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     
     trackid = int(request.form.get('trackid'))
-    track = tracklist.loc[trackid]
+    # track = tracklist.loc[trackid]
+    # print(f'    run_autoedit track {track}')
+    track = tracklist[tracklist['id'] == trackid].squeeze()
+    print(f'    run_autoedit track {track}')
+
 
     # filename = track.filename
         
@@ -222,7 +226,7 @@ def track():
         trackid = request.args.get('trackid')
         if trackid is None:
             flash('no trackid')
-            return redirect(f'/{current_app.config["BASE_PATH"]}/tracklist')
+            return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
         trackid = int(trackid)
         mode = "show"
     print(f'    track: session {session.keys()}')
@@ -233,8 +237,11 @@ def track():
     tracklist_filename = '{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], username)
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     # get track
-    track = tracklist.loc[trackid].to_dict()
-    print(f'track {track}\nmode {mode}')
+    # track = tracklist.loc[trackid].to_dict()
+    # print(f'    track track {track}\nmode {mode}')
+    track = tracklist[tracklist['id'] == trackid].squeeze().to_dict()
+    # track = track_.loc[track_.index[0]]
+    print(f'    track track {track}\nmode {mode}')
 
     autoedit_res = {
         'filename_export': None, 'length': None,
@@ -307,6 +314,11 @@ def upload():
             )
             soundfile.save(location)
             url = url_for('download', filename=filename, _external=True)
+            print(f'    upload saved file url_for {url}')
+            url = f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/soundfile/{filename}'
+            print(f'    upload saved file url_sf {url}')
+            url = f'{request.host_url[:-1]}{current_app.config["BASE_PATH"]}/data/upload/{filename}'
+            print(f'    upload saved file url {url}')
             if 'username' in request.cookies:
                 username = request.cookies["username"]
                 # jsonstr = jsonify({'url': url, 'username': username})
@@ -322,7 +334,7 @@ def upload():
         else:
             flash('Sorry. Upload Failed.')
 
-    return redirect(f'/{current_app.config["BASE_PATH"]}/')
+    return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/')
 
 
 def download(filename):
@@ -332,6 +344,51 @@ def download(filename):
         as_attachment=True
     )
 
+def assets(filename):
+    return send_from_directory(
+        current_app.config['ASSETS_DIR'],
+        filename,
+        as_attachment=False
+    )
+
+def setsession():
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    # get user_session
+    if 'username' in request.cookies:
+        username = request.cookies["username"]
+    else:
+        username = 'default'
+    
+    # # check if username in session cookie
+    # if 'username' not in request.cookies:
+    #     username = generate_username(4)
+    #     print(f'creating username {username}')
+
+    #     store_user_session(username)
+    # else:
+    #     username = request.cookies["username"]
+    #     print(f'getting cookie {username}')
+    
+    # create response
+    resp = make_response(
+        render_template(
+            'session.html', username=username,
+            base_path=current_app.config["BASE_PATH"]
+        ))
+
+    if request.method == 'POST':
+        sessionkey = request.form.get('sessionkey')
+        
+        # set cookie on response
+        # if 'username' not in request.cookies:        
+        print(f'setting cookie[username] to {sessionkey}')
+        resp.set_cookie('username', sessionkey)
+            
+        erfolg = f'JUHUUU Erfolg! changed session from {username} to {sessionkey}'
+        flash(erfolg)
+        
+        # return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/setsession')
+    return resp
 
 def data_serve_static():
     print(f'dir request {dir(request)}')
@@ -340,8 +397,8 @@ def setup_routes(app):
     url.methods = ['GET', 'POST']
     upload.methods = ['POST']
     track.methods = ['GET', 'POST']
-   
-    urlpref = '/droptrack'
+    setsession.methods = ['GET', 'POST']
+    
     app.add_url_rule('/', 'root', root)
     app.add_url_rule('/url', 'url', url)
     # app.add_url_rule('/data', 'data', data_serve_static)
@@ -351,6 +408,8 @@ def setup_routes(app):
     app.add_url_rule('/trackdl', 'trackdl', trackdl)
     app.add_url_rule('/tracklist', 'tracklist', tracklist)
     # app.add_url_rule('/droptrack', 'droptrack', droptrack)
+    app.add_url_rule('/setsession', 'setsession', setsession)
+    app.add_url_rule('/assets/<path:filename>', 'assets', assets)
 
 def droptrack():
     return redirect('/')

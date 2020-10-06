@@ -4,19 +4,24 @@
 <article class="error">{{ result.message }}</article>
 {% endif %}
 
-<div style="position: relative; top: -14px">
-  <table style="border: 1px solid black; width: 400px;">
-    <tr style="font-family: sans; font-weight: normal">
-      <td>app</td>
-      <td style="text-align: right">session</td>
+<div style="position: relative; top: 0px">
+  <table class="dt-table-1">
+    <tr class="dt-table-row-1">
+      <td class="dt-table-col-left">app</td>
+      <td class="dt-table-col-right">session</td>
     </tr>
     <tr>
-      <td><span style="font-family: sans; font-weight: bold">droptrack | <a href="{{ base_path }}/tracklist">tracklist</a></span></td>
-      <td style="text-align: right"><span style="font-family: sans; font-weight: bold">{{ username }}</span></td>
+      <td>
+	<span class="dt-text-bold">droptrack | <a href="{{ base_path }}/tracklist">tracklist</a></span>
+      </td>
+      <td class="dt-table-col-right">
+	<span class="dt-text-bold">{{ username }}</span>
+	<span class="dt-text-normal"><a href="{{base_path}}/setsession">c</a></span>
+      </td>
     </tr>
   </table>
-  <div style="font-family: sans">
-    <table style="border: 1px solid black; width: 400px;">
+  <div class="dt-text-normal">
+    <table class="dt-table-2">
       <tr>
 	<td>1</td>
 	<td>upload your track from url or file</td>
@@ -33,12 +38,13 @@
   </div>
 </div>
 
-<div style="position: relative; top: -10px">
-  <form action="url" method="POST">
+<div style="position: relative; top: 0px; width: 100%">
+  <p></p>
+  <form action="{{base_path}}/url" method="POST">
     <input name="url" type="url" placeholder="URL of soundfile"/>
     <input type="submit" />
   </form>
-  <form action="soundfile" method="POST" enctype="multipart/form-data">
+  <form action="{{base_path}}/soundfile" method="POST" enctype="multipart/form-data">
     <input name="soundfile" type="file" accept="audio/*" placeholder="Upload Soundfile"/>
     <input type="submit" value="Upload" />
   </form>
@@ -46,6 +52,46 @@
 {% endblock %}
 
 {% block content2 %}
+{% if True %}
+<div style="position: relative; top: 0px">
+  <div class="dt-text-bold"><p>user track database</p></div>
+  <table class="dt-table-tracklist">
+    <tr>
+      {% for field in tracklist.columns %}
+      {% if field in ['url', 'filepath', 'fingerprint', 'hash'] %}
+      {% else %}
+      <td class="dt-text-bold">
+	{{ field }}
+      </td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    
+    {% for rowidx, rowdata in tracklist.sort_index(ascending=False).iterrows() %}
+    <tr>
+      {% for fieldkey in rowdata.to_dict() %}
+      {% if fieldkey in ['id'] %}
+      <td class="dt-text-normal">
+	<a href="{{ base_path }}/track?trackid={{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
+      </td>
+      {% elif fieldkey in ['url', 'filepath', 'fingerprint', 'hash'] %}
+      {% elif fieldkey in ['length'] %}
+      <td class="dt-table-col-right">
+      {{ '%0.2f'| format(rowdata[fieldkey])|float }}
+      </td>
+      {% else %}
+      <td class="dt-text-normal">
+      {{ rowdata[fieldkey]|string|truncate(30) }}
+      </td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}    
+  </table>
+</div>
+{% endif %}
+
+{% if False %}
 <div style="position: relative; top: 0px">
   <div style="font-family: sans;"><p style="font-weight: bold">tracklist {{ username }}</p></div>
 </div>
@@ -75,4 +121,6 @@
     {% endfor %}
   </table>
 </div>
+{% endif %}
+
 {% endblock %}
