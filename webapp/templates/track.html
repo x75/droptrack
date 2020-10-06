@@ -4,13 +4,31 @@
 <!-- div style="font-family: sans;"><p>We are tracklist</p></div -->
 
 <div style="position: relative; top: 20px">
-  <div style="font-family: sans;"><p>session <span style="font-weight: bold">{{ username }}</span></p></div>
-  <div style="font-family: sans;"><p style="font-weight: bold"><a href="{{ base_path }}/url">droptrack</a> | <a href="{{ base_path }}/tracklist">tracklist</a></p></div>
-  <div style="font-family: sans;"><p style="font-weight: bold">track detail id <a href="{{ base_path }}/track?trackid={{ tracklist['id'] }}">{{ tracklist['id'] }}</a></p></div>
+  <!-- <div style="font-family: sans;"><p>session <span style="font-weight: bold">{{ username }}</span></p></div> -->
+  <!-- <div style="font-family: sans;"><p style="font-weight: bold"><a href="{{ base_path }}/url">droptrack</a> | <a href="{{ base_path }}/tracklist">tracklist</a></p></div> -->
   <!-- <div style="font-family: sans"> -->
   <!--   <p>workflow: 1) upload your track, 2) select track(s) from the list, 3) select operation, 4) run the thing</p> -->
   <!--   <p>form action is autosuite flask app</p> -->
   <!-- </div> -->
+  <div style="position: relative; top: 0px">
+    <table class="dt-table-1">
+      <tr class="dt-table-row-1">
+	<td class="dt-table-col-left">app</td>
+	<td class="dt-table-col-right">session</td>
+      </tr>
+      <tr>
+	<td>
+	  <span class="dt-text-bold"><a href="{{ base_path }}/url">droptrack</a> | <a href="{{ base_path }}/tracklist">tracklist</a></span>
+	</td>
+	<td class="dt-table-col-right">
+	  <span class="dt-text-bold">{{ username }}</span>
+	  <span class="dt-text-normal"><a href="{{base_path}}/setsession">c</a></span>
+	</td>
+      </tr>
+    </table>
+  </div>
+  <div class="dt-text-bold">
+    <span style="dt-text-bold">track detail id <a href="{{ base_path }}/track?trackid={{ tracklist['id'] }}">{{ tracklist['id'] }}</a></span></div>
 </div>
 
 {% if True %}
@@ -26,7 +44,7 @@
   {% endif %}
 
   <!-- <p>trackinfo</p> -->
-  <table style="border: 2px;">
+  <table style="border: 2px; border-spacing: 10px">
     
     <!-- <tr> -->
     <!-- {% for field in tracklist %} -->
@@ -37,7 +55,7 @@
     <!-- </tr> -->
     {% for track_key in tracklist %}
     <tr>
-      <td style="font-family: sans">
+      <td class="dt-text-bold dt-table-col-right">
 	{{ track_key }}
       </td>
       <td>{{ tracklist[track_key]|string|truncate(100) }}</td>
@@ -102,7 +120,7 @@
 	    <td>{{fieldkey}}</td>
 	    <td style="font-family: sans">
 	      {% if fieldkey in ['filename_export', 'autoedit_graph'] %}
-	      <a href="/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
+	      <a href="{{ media_server }}/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
 	      {% else %}
 	      {{ rowdata[fieldkey]|string|truncate(25) }}
 	      {% endif %}

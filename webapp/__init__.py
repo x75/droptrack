@@ -289,10 +289,14 @@ def track():
 
         data_write(autoedit_results, autoedit_results_filename)
 
+    media_server = current_app.config['MEDIA_SERVER']
+    print(f'    tracklist media_server {media_server}')
+    
     # print(f'    track: autoedit_res {autoedit_res}')
     return render_template(
         'track.html', name="opt", tracklist=track, username=username,
         autoedit_res=autoedit_res, autoedit_results=autoedit_results,
+        media_server=media_server,
         base_path=current_app.config["BASE_PATH"]
     )
 
