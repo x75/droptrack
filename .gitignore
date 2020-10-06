@@ -8,5 +8,12 @@ data/download/
 data/upload/
 data/backlog.txt
 data/last_sync
+data/*.csv
+data/*.wav
+data/*.pkl
+data/*.txt
+data/audio_sort_features/*.txt
+*.pkl
+cachedir
 *~
 
