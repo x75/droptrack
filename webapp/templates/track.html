@@ -32,7 +32,7 @@
 </div>
 
 {% if True %}
-<div style="position: relative; top: 20px; font-family: sans">
+<div style="position: relative; top: 0px; font-family: sans">
 
   {% if False %}
   {% if request.method == 'GET' %}
@@ -54,12 +54,19 @@
     <!-- {% endfor %} -->
     <!-- </tr> -->
     {% for track_key in tracklist %}
+    {% if track_key in ['url', 'filepath', 'fingerprint', 'hash'] %}
+    {% else %}
     <tr>
       <td class="dt-text-bold dt-table-col-right">
 	{{ track_key }}
       </td>
+      {% if track_key in ['length'] %}
+      <td>{{ '%.2f' | format(tracklist[track_key]) | float  }}</td>
+      {% else %}
       <td>{{ tracklist[track_key]|string|truncate(100) }}</td>
+      {% endif %}
     </tr>
+    {% endif %}
     {% endfor %}
     
   </table>
@@ -120,9 +127,11 @@
 	    <td>{{fieldkey}}</td>
 	    <td style="font-family: sans">
 	      {% if fieldkey in ['filename_export', 'autoedit_graph'] %}
-	      <a href="{{ media_server }}/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
+	      <a href="{{ media_server }}/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(40) }}</a>
+	      {% elif fieldkey in ['seg_s'] %}
+	      {{ rowdata[fieldkey]|string }}
 	      {% else %}
-	      {{ rowdata[fieldkey]|string|truncate(25) }}
+	      {{ rowdata[fieldkey]|string|truncate(40) }}
 	      {% endif %}
 	    </td>
 	  </tr>
