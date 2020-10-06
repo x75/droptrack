@@ -5,7 +5,7 @@
 
 <div style="position: relative; top: 20px">
   <div style="font-family: sans;"><p>session <span style="font-weight: bold">{{ username }}</span></p></div>
-  <div style="font-family: sans;"><p style="font-weight: bold"><a href="/url">droptrack</a> | tracklist</p></div>
+  <div style="font-family: sans;"><p style="font-weight: bold"><a href="{{ base_path }}/url">droptrack</a> | tracklist</p></div>
   <!-- <div style="font-family: sans"> -->
   <!--   <p>workflow: 1) upload your track, 2) select track(s) from the list, 3) select operation, 4) run the thing</p> -->
   <!--   <p>form action is autosuite flask app</p> -->
@@ -29,7 +29,7 @@
       {% for fielddata in rowdata %}
       <td style="font-family: sans">
 	{% if loop.index == 1 %}
-	<a href="/track?trackid={{fielddata}}">{{ fielddata|string|truncate(20) }}</a>
+	<a href="{{ base_path }}/track?trackid={{fielddata}}">{{ fielddata|string|truncate(20) }}</a>
 	{% else %}
 	{{ fielddata|string|truncate(20) }}
 	{% endif %}
@@ -58,7 +58,7 @@
       {% for fielddata in rowdata %}
       <td style="font-family: sans">
 	{% if loop.index == 1 %}
-	<a href="/track?trackid={{fielddata}}">{{ fielddata|string|truncate(20) }}</a>
+	<a href="{{ base_path }}/track?trackid={{fielddata}}">{{ fielddata|string|truncate(20) }}</a>
 	{% else %}
 	{{ fielddata|string|truncate(20) }}
 	{% endif %}
