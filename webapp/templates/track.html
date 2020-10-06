@@ -43,35 +43,37 @@
   {% endif %}
   {% endif %}
 
-  <!-- <p>trackinfo</p> -->
-  <table style="border: 2px; border-spacing: 10px">
-    
-    <!-- <tr> -->
-    <!-- {% for field in tracklist %} -->
-    <!-- <td style="font-family: sans; font-weight: bold"> -->
-    <!--   {{ field }} -->
-    <!-- </td> -->
-    <!-- {% endfor %} -->
-    <!-- </tr> -->
-    {% for track_key in tracklist %}
-    {% if track_key in ['url', 'filepath', 'fingerprint', 'hash'] %}
-    {% else %}
-    <tr>
-      <td class="dt-text-bold dt-table-col-right">
-	{{ track_key }}
-      </td>
-      {% if track_key in ['length'] %}
-      <td>{{ '%.2f' | format(tracklist[track_key]) | float  }}</td>
+  <div style="position: relative; top: 0px; font-family: sans">
+    <table style="border: 2px; border-spacing: 10px">
+      
+      <!-- <tr> -->
+      <!-- {% for field in tracklist %} -->
+      <!-- <td style="font-family: sans; font-weight: bold"> -->
+      <!--   {{ field }} -->
+      <!-- </td> -->
+      <!-- {% endfor %} -->
+      <!-- </tr> -->
+      {% for track_key in tracklist %}
+      {% if track_key in ['url', 'filepath', 'fingerprint', 'hash'] %}
       {% else %}
-      <td>{{ tracklist[track_key]|string|truncate(100) }}</td>
+      <tr>
+	<td class="dt-text-bold dt-table-col-right">
+	  {{ track_key }}
+	</td>
+	{% if track_key in ['length'] %}
+	<td>{{ '%.2f' | format(tracklist[track_key]) | float  }}</td>
+	{% else %}
+	<td>{{ tracklist[track_key]|string|truncate(100) }}</td>
+	{% endif %}
+      </tr>
       {% endif %}
-    </tr>
-    {% endif %}
-    {% endfor %}
-    
-  </table>
+      {% endfor %}
+      
+    </table>
+    <p></p>
+  </div>
 
-  <div style="position: relative; top: 20px; font-family: sans">
+  <div style="position: relative; top: 0px; font-family: sans">
     <span style="font-weight: bold">autoedit params</span>
     <hr />
     <form action="{{base_path}}/track" method="POST">
@@ -84,9 +86,10 @@
         seed <input name="seed" type="input" value="1234" />
         <input type="submit" value="autoedit" />
     </form>
+    <p></p>
   </div>
 
-  <div style="position: relative; top: 40px; font-family: sans">
+  <div style="position: relative; top: 0px; font-family: sans">
     {% if False and autoedit_res['filename_export'] != None %}
     <p>autoedit results</p>
     <table>
@@ -104,7 +107,7 @@
     </table>
     {% endif %}
     
-    <div style="position: relative; top: 20px; font-family: sans">
+    <div style="position: relative; top: 0px; font-family: sans">
       <span style="font-weight: bold">autoedit tables</span>
     </div>
 
@@ -115,7 +118,7 @@
     <!--   </div> -->
     <!-- </div> -->
     
-    <div style="position: relative; top: 20px; font-family: sans">
+    <div style="position: relative; top: 0px; font-family: sans">
       {% for rowidx, rowdata in autoedit_results.sort_index(ascending=False).iterrows() %}
       <div style="position: relative; top: 0px; font-family: sans">
 	<hr />

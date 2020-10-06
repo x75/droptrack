@@ -110,8 +110,9 @@ def url():
         if validate_url(url):
             if 'username' in request.cookies:
                 username = request.cookies["username"]
-                jsonstr = jsonify({'url': url, 'username': username})
-                print(f'    url jsonstr {jsonstr}')
+                # jsonstr = jsonify({'url': url, 'username': username})
+                jsonstr = json.dumps({'url': url, 'username': username})
+                print(f'    url {url}\njsonstr {jsonstr}')
                 current_app.queue.send(jsonstr)
                 erfolg = f'JUHUUU Erfolg! {username}'
             else:

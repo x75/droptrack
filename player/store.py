@@ -102,8 +102,8 @@ class Store(object):
 
         # try to get trackinfo from store
         trackinfo = self.ts[self.ts.url == url]
-        print('    trackinfo length = {0}'.format(len(trackinfo)))
-        print('    {0}'.format(trackinfo.values))
+        print('    trackinfo length {0}'.format(len(trackinfo)))
+        print('    trackinfo values {0}'.format(trackinfo.values))
         # print('player.store download trackinfo\n    \'{0}\''.format(trackinfo['filename'].tolist()[0]))
         
         # if track is in the store already
