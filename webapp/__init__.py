@@ -322,7 +322,8 @@ def setup_routes(app):
     url.methods = ['GET', 'POST']
     upload.methods = ['POST']
     track.methods = ['GET', 'POST']
-    
+   
+    urlpref = '/droptrack'
     app.add_url_rule('/', 'root', root)
     app.add_url_rule('/url', 'url', url)
     # app.add_url_rule('/data', 'data', data_serve_static)
@@ -331,6 +332,11 @@ def setup_routes(app):
     app.add_url_rule('/track', 'track', track)
     app.add_url_rule('/trackdl', 'trackdl', trackdl)
     app.add_url_rule('/tracklist', 'tracklist', tracklist)
+    # app.add_url_rule('/droptrack', 'droptrack', droptrack)
+
+def droptrack():
+    return redirect('/')
+
 
 def setup_queue(app):
     app.queue = Queue(app.config)
