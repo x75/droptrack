@@ -12,11 +12,14 @@
     </tr>
     <tr>
       <td><span style="font-family: sans; font-weight: bold">droptrack | <a href="{{ base_path }}/tracklist">tracklist</a></span></td>
-      <td style="text-align: right"><span style="font-family: sans; font-weight: bold">{{ username }}</span></td>
+      <td style="text-align: right">
+	<span style="font-family: sans; font-weight: bold">{{ username }}</span>
+	<span style="font-family: sans; font-weight: normal"><a href="{{base_path}}/setsession">c</a></span>
+      </td>
     </tr>
   </table>
   <div style="font-family: sans">
-    <table style="border: 1px solid black; width: 400px;">
+    <table style="border: 1px solid lightgray; width: 400px;">
       <tr>
 	<td>1</td>
 	<td>upload your track from url or file</td>
@@ -34,11 +37,11 @@
 </div>
 
 <div style="position: relative; top: -10px">
-  <form action="url" method="POST">
+  <form action="{{base_path}}/url" method="POST">
     <input name="url" type="url" placeholder="URL of soundfile"/>
     <input type="submit" />
   </form>
-  <form action="soundfile" method="POST" enctype="multipart/form-data">
+  <form action="{{base_path}}/soundfile" method="POST" enctype="multipart/form-data">
     <input name="soundfile" type="file" accept="audio/*" placeholder="Upload Soundfile"/>
     <input type="submit" value="Upload" />
   </form>
@@ -46,6 +49,46 @@
 {% endblock %}
 
 {% block content2 %}
+{% if True %}
+<div style="position: relative; top: 0px">
+  <div style="font-family: sans; font-weight: bold;"><p>user track database</p></div>
+  <table>
+    <tr>
+      {% for field in tracklist.columns %}
+      {% if field in ['url', 'filepath', 'fingerprint', 'hash'] %}
+      {% else %}
+      <td style="font-family: sans; font-weight: bold">
+	{{ field }}
+      </td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    
+    {% for rowidx, rowdata in tracklist.sort_index(ascending=False).iterrows() %}
+    <tr>
+      {% for fieldkey in rowdata.to_dict() %}
+      {% if fieldkey in ['id'] %}
+      <td style="font-family: sans">
+	<a href="{{ base_path }}/track?trackid={{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(20) }}</a>
+      </td>
+      {% elif fieldkey in ['url', 'filepath', 'fingerprint', 'hash'] %}
+      {% elif fieldkey in ['length'] %}
+      <td style="font-family: sans; text-align: right">
+      {{ '%0.2f'| format(rowdata[fieldkey])|float }}
+      </td>
+      {% else %}
+      <td style="font-family: sans">
+      {{ rowdata[fieldkey]|string|truncate(30) }}
+      </td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}    
+  </table>
+</div>
+{% endif %}
+
+{% if False %}
 <div style="position: relative; top: 0px">
   <div style="font-family: sans;"><p style="font-weight: bold">tracklist {{ username }}</p></div>
 </div>
@@ -75,4 +118,6 @@
     {% endfor %}
   </table>
 </div>
+{% endif %}
+
 {% endblock %}

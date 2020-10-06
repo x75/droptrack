@@ -49,7 +49,7 @@
   <div style="position: relative; top: 20px; font-family: sans">
     <span style="font-weight: bold">autoedit params</span>
     <hr />
-    <form action="track" method="POST">
+    <form action="{{base_path}}/track" method="POST">
         <!-- input name="track" type"track" placeholder="URL of soundfile"/ -->
         <input name="trackid" type="hidden" value="{{ tracklist.id }}" />
         <input name="mode" type="hidden" value="autoedit" />

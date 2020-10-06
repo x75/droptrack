@@ -120,7 +120,7 @@ def url():
             flash(erfolg)
         else:
             flash('Sorry, this did not work. Please try again')
-    return redirect(f'/{current_app.config["BASE_PATH"]}')
+    return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/')
 
 def tracklist():
     assert 'username' in request.cookies, 'Require username, please restart app from root level'
@@ -222,7 +222,7 @@ def track():
         trackid = request.args.get('trackid')
         if trackid is None:
             flash('no trackid')
-            return redirect(f'/{current_app.config["BASE_PATH"]}/tracklist')
+            return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
         trackid = int(trackid)
         mode = "show"
     print(f'    track: session {session.keys()}')
@@ -322,7 +322,7 @@ def upload():
         else:
             flash('Sorry. Upload Failed.')
 
-    return redirect(f'/{current_app.config["BASE_PATH"]}/')
+    return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/')
 
 
 def download(filename):
@@ -332,6 +332,44 @@ def download(filename):
         as_attachment=True
     )
 
+def setsession():
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    # get user_session
+    if 'username' in request.cookies:
+        username = request.cookies["username"]
+    else:
+        username = 'default'
+    
+    # # check if username in session cookie
+    # if 'username' not in request.cookies:
+    #     username = generate_username(4)
+    #     print(f'creating username {username}')
+
+    #     store_user_session(username)
+    # else:
+    #     username = request.cookies["username"]
+    #     print(f'getting cookie {username}')
+    
+    # create response
+    resp = make_response(
+        render_template(
+            'session.html', username=username,
+            base_path=current_app.config["BASE_PATH"]
+        ))
+
+    if request.method == 'POST':
+        sessionkey = request.form.get('sessionkey')
+        
+        # set cookie on response
+        # if 'username' not in request.cookies:        
+        print(f'setting cookie[username] to {sessionkey}')
+        resp.set_cookie('username', sessionkey)
+            
+        erfolg = f'JUHUUU Erfolg! changed session from {username} to {sessionkey}'
+        flash(erfolg)
+        
+        # return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/setsession')
+    return resp
 
 def data_serve_static():
     print(f'dir request {dir(request)}')
@@ -340,6 +378,7 @@ def setup_routes(app):
     url.methods = ['GET', 'POST']
     upload.methods = ['POST']
     track.methods = ['GET', 'POST']
+    setsession.methods = ['GET', 'POST']
     
     app.add_url_rule('/', 'root', root)
     app.add_url_rule('/url', 'url', url)
@@ -349,6 +388,7 @@ def setup_routes(app):
     app.add_url_rule('/track', 'track', track)
     app.add_url_rule('/trackdl', 'trackdl', trackdl)
     app.add_url_rule('/tracklist', 'tracklist', tracklist)
+    app.add_url_rule('/setsession', 'setsession', setsession)
 
 def setup_queue(app):
     app.queue = Queue(app.config)
