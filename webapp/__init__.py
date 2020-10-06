@@ -178,7 +178,8 @@ def run_autoedit(args):
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     
     trackid = int(request.form.get('trackid'))
-    track = tracklist.loc[trackid]
+    # track = tracklist.loc[trackid]
+    track = tracklist[tracklist['id'] == trackid].squeeze()
 
     # filename = track.filename
         
@@ -233,7 +234,9 @@ def track():
     tracklist_filename = '{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], username)
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     # get track
-    track = tracklist.loc[trackid].to_dict()
+    # track = tracklist.loc[trackid].to_dict()
+    # track = tracklist[tracklist['id'] == trackid].to_dict()
+    track = tracklist[tracklist['id'] == trackid].squeeze().to_dict()
     print(f'track {track}\nmode {mode}')
 
     autoedit_res = {
