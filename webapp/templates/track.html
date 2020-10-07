@@ -82,7 +82,12 @@
         <input name="mode" type="hidden" value="autoedit" />
         duration in secs <input name="duration" type="input" value="120" />
         number of segments <input name="numsegs" type="input" value="30" />
-        assemble mode <input name="assemble_mode" type="input" value="random" />
+        <!-- assemble mode <input name="assemble_mode" type="input" value="random" /> -->
+        assemble mode
+	<select name="assemble_mode" value="random" />
+	<option value="random">random</option>
+	<option value="sequential">sequential</option>
+	</select>
         seed <input name="seed" type="input" value="1234" />
         <input type="submit" value="autoedit" />
     </form>
