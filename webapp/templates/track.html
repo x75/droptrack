@@ -18,7 +18,7 @@
       </tr>
       <tr>
 	<td>
-	  <span class="dt-text-bold"><a href="{{ base_path }}/url">droptrack</a> | <a href="{{ base_path }}/tracklist">tracklist</a></span>
+	  <span class="dt-text-bold"><a href="{{ base_path }}/url">droptrack</a> | <a href="{{ base_path }}/tracklist">tracklist</a> | track detail</span>
 	</td>
 	<td class="dt-table-col-right">
 	  <span class="dt-text-bold">{{ username }}</span>
@@ -27,8 +27,6 @@
       </tr>
     </table>
   </div>
-  <div class="dt-text-bold">
-    <span style="dt-text-bold">track detail id <a href="{{ base_path }}/track?trackid={{ tracklist['id'] }}">{{ tracklist['id'] }}</a></span></div>
 </div>
 
 {% if True %}
@@ -62,6 +60,8 @@
 	</td>
 	{% if track_key in ['length'] %}
 	<td>{{ '%.2f' | format(tracklist[track_key]) | float  }}</td>
+	{% elif track_key == 'id' %}
+	<td><a href="{{ base_path }}/track?trackid={{ tracklist['id'] }}">{{ tracklist['id'] }}</a></td>
 	{% else %}
 	<td>{{ tracklist[track_key]|string|truncate(100) }}</td>
 	{% endif %}
@@ -77,19 +77,38 @@
     <span style="font-weight: bold">autoedit params</span>
     <hr />
     <form action="{{base_path}}/track" method="POST">
-        <!-- input name="track" type"track" placeholder="URL of soundfile"/ -->
-        <input name="trackid" type="hidden" value="{{ tracklist.id }}" />
-        <input name="mode" type="hidden" value="autoedit" />
-        duration in secs <input name="duration" type="input" value="120" />
-        number of segments <input name="numsegs" type="input" value="30" />
-        <!-- assemble mode <input name="assemble_mode" type="input" value="random" /> -->
-        assemble mode
-	<select name="assemble_mode" value="random" />
-	<option value="random">random</option>
-	<option value="sequential">sequential</option>
-	</select>
-        seed <input name="seed" type="input" value="1234" />
-        <input type="submit" value="autoedit" />
+      <!-- input name="track" type"track" placeholder="URL of soundfile"/ -->
+      <input name="trackid" type="hidden" value="{{ tracklist.id }}" />
+      <input name="mode" type="hidden" value="autoedit" />
+      <table>
+	<tr>
+	  <td>duration in secs</td>
+	  <td><input name="duration" type="input" value="120" /></td>
+	</tr>
+	<tr>
+          <td>number of segments</td>
+	  <td><input name="numsegs" type="input" value="30" /></td>
+	</tr>
+	<tr>
+          <td>assemble mode</td>
+	  <td>
+	    <select name="assemble_mode" value="random">
+	    <option value="random">random</option>
+	    <option value="sequential">sequential</option>
+	    </select>
+	  </td>
+	</tr>
+	<tr>
+          <td>seed</td>
+	  <td><input name="seed" type="input" value="1234" /></td>
+	</tr>
+	<tr>
+	  <td></td>
+	  <td>
+	    <input type="submit" value="autoedit" />
+	  </td>
+	</tr>
+      </table>
     </form>
     <p></p>
   </div>
@@ -113,7 +132,7 @@
     {% endif %}
     
     <div style="position: relative; top: 0px; font-family: sans">
-      <span style="font-weight: bold">autoedit tables</span>
+      <span style="font-weight: bold">autoedits generated</span>
     </div>
 
     <!-- <div style="position: relative; top: 20px; font-family: sans"> -->
