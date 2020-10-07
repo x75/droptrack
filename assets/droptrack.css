@@ -2,7 +2,8 @@ body {
     font-family: sans;
     font-size: 20px;
     width: auto;
-    background-image: url(http://127.0.0.1/droptrack/data/jdkgegj_r1-autoedit-47.jpg);
+    /* background-image: url(http://127.0.0.1/droptrack/data/jdkgegj_r1-autoedit-47.jpg); */
+    background-image: url(http://soup.jetpack.cl/droptrack/data/369-Draft-o3XH7CjpBoI-autoedit-51.jpg);
     background-repeat: repeat-no;
     background-size: cover;
     /* background-image: linear-gradient(to right, red , yellow); */
@@ -11,6 +12,17 @@ body {
     /* background-opacity: 0.1; */
     /* padding:60px 0 0 0; */
     /* background-image : url(path_to_logo) no-repeat top left;  */
+}
+
+a {
+    /* color: #900090; */
+    color: #491af2;
+}
+
+a:visited {
+    /* color: #900090; */
+    /* color: #ec51f3; */
+    color: #541df4;
 }
 
 /* div::after { */
@@ -47,12 +59,17 @@ body {
     /* opacity: 0.4; */
 }
 
+.dt-main-titlerow {
+    background-image: linear-gradient(to right, #38b31d, #e7ef28);
+}
+
 .dt-h1 {
     width: 100%;
     /* background-color: grey; */
     /* background : url("/assets/fm_logo_only_transparent_64.png"); */
     background-repeat: repeat-no;
     background-image: linear-gradient(to right, red , yellow);
+    /* background-image: linear-gradient(to right, '#38b31d', '#e7ef28'); */
     color: white;
     font-family: sans;
     font-weight: normal;

@@ -165,7 +165,7 @@ class Store(object):
             # this might also work in case curl is not available
             # self.download_from_webapp(url, location)
             # return location
-            
+
         elif 'soundcloud.com' in components.netloc:
             handle = 'soundscrape/'
             filehandle = path.basename(components.path)
@@ -185,6 +185,20 @@ class Store(object):
             # print('    ytid =', ytid)
             filehandle = ''
             filename = ytid
+        elif url.startswith('http') and url[:-3] in ['wav', 'mp3']:
+            # if url.startswith('{'):
+            #     url_dict = json.loads(url)
+            #     url = url_dict['url']
+            #     username = url_dict['username']
+            # else:
+            #     username = 'default'
+
+            handle = 'webapp/'
+            filehandle = ''
+            filename = path.basename(components.path)
+            location = path.join(self.trackstore_dir + handle, filename)
+            command = ['curl', '-s', '--location', url, '--output', location]
+
         else:
             raise PlayerError('    Error: unknown url type {0}'.format(components.netloc))
 
