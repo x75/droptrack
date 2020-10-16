@@ -4,6 +4,11 @@ import atexit
 from logging import Formatter
 from logging.handlers import SysLogHandler
 import os
+from os import listdir
+from os.path import isfile, join
+from os import walk
+from pprint import pformat
+
 from werkzeug.utils import secure_filename
 from flask import (
     Flask,
@@ -391,6 +396,151 @@ def setsession():
         # return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/setsession')
     return resp
 
+def run_autodeck(**kwargs):
+    
+    print(f'        run_autodeck kwargs {kwargs}')
+    if 'sequence' not in kwargs:
+        return {
+            'autodeck': False,
+        }
+
+    if 'filemap' not in kwargs:
+        return {
+            'autodeck': False,
+        }
+
+    sequence = kwargs['sequence'].split(' ')
+    filemap = kwargs['filemap']
+    item_choices = []
+    for i, item in enumerate(sequence):
+        # print(f'    run_ad item_{i} {item}')
+        # print(f'    run_ad item_{i} {filemap[item]}')
+        item_choice = random.choice(filemap[item])
+        print(f'    run_ad item_choice {item} {item_choice}')
+        item_choices.append(item_choice)
+    
+    return {
+        'autodeck': True,
+        'sequence': sequence,
+        'item_choices': item_choices,
+    }
+
+def autodeck():
+    assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    # get user_session
+    if 'username' in request.cookies:
+        username = request.cookies["username"]
+    else:
+        username = 'default'
+
+    # handle request methods
+    if request.method == 'POST':
+        print(f'autodeck POST {request}')
+        # trackid = int(request.form.get('trackid'))
+        mode = request.form.get('mode')
+    else:
+        print(f'autodeck GET {request}')
+        # trackid = request.args.get('trackid')
+        # if trackid is None:
+        #     flash('no trackid')
+        #     return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
+        # trackid = int(trackid)
+        mode = "show"
+    print(f'    track: session {session.keys()}')
+    print(f'    track: cookies {request.cookies.keys()}')
+
+    # assemble page content
+
+    categories = [
+        'contact', 'vision', 'tech', 'people', 'product', 'market',
+        'deck', 'story',
+    ]
+
+    # get slides
+    mypath = '/home/src/QK/droptrack/data/autodeck/categories'
+
+    # onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]    
+
+    onlydirs = []
+    for (dirpath, dirnames, filenames) in walk(mypath):
+        # f.extend(filenames)
+        onlydirs.extend(dirnames)
+        break
+    print(f'    onlydirs {onlydirs}')
+
+    onlyfiles = []
+    for onlydir in onlydirs:
+        onlydir2 = mypath + '/' + onlydir
+        print(f'    onlydir2 {onlydir2}')
+        l_ = [f for f in listdir(onlydir2) if isfile(join(onlydir2, f))]
+        onlyfiles.extend(l_)
+    print(f'    onlyfiles {onlyfiles}')
+
+    # TODO sort this list into dict
+    filemap = dict(zip(categories, [[] for c_ in categories]))
+    print(f'    track: filemap {pformat(filemap)}')
+    
+    for onlyfile in onlyfiles:
+        # print(f'    onlyfile {onlyfile}')
+        onlyfile_l = onlyfile.split('-')
+        print(f'    onlyfile_l {onlyfile_l}')
+        
+        filemap[onlyfile_l[2]].append(
+            {
+                'filename': onlyfile,
+                'deck': onlyfile_l[1],
+                'subcat': onlyfile_l[3]
+            }
+        )
+    print(f'    track: filemap {pformat(filemap)}')
+    
+    autodeck_result = None
+    # {
+    #     # 'filename_export': None,
+    #     # 'length': None,
+    #     # 'segs': None,
+    #     # 'final_duration': 0,
+    #     # 'seg_s': 0
+    #     'filemap': filemap
+    # }
+
+    if mode == "autodeck":
+        print(f'    autodeck am start')
+        autodeck_result = run_autodeck(sequence='vision tech people', filemap=filemap)
+        # data_write(autoedit_results, autoedit_results_filename)
+    if autodeck_result is not None:
+        print(f'    autodeck autodeck_result {pformat(autodeck_result)}')
+        from pdfrw import PdfReader, PdfWriter, IndirectPdfDict
+        outfilename = f'/home/src/QK/droptrack/data/autodeck/autodeck-{random.randint(0, 1000000)}.pdf' 
+        writer = PdfWriter()
+        for i, slide in enumerate(autodeck_result['item_choices']):
+            slidecat = autodeck_result['sequence'][i]
+            slidefilename = '/home/src/QK/droptrack/data/autodeck/categories' + '/' + \
+                            slidecat + '/' + \
+                            slide['filename']
+            print(f'        autodeck i {i} slidefilename {slidefilename} {slidecat}')
+            
+            writer.addpages(PdfReader(slidefilename).pages)
+
+        writer.trailer.Info = IndirectPdfDict(
+            Title='your title goes here',
+            Author='your name goes here',
+            Subject='what is it all about?',
+            Creator='some script goes here',
+        )
+        writer.write(outfilename)       
+
+    media_server = current_app.config['MEDIA_SERVER']
+    print(f'    autodeck media_server {media_server}')
+
+    deckid = random.randint(0, 100)
+    
+    return render_template(
+        'autodeck.html', name="opt", username=username,
+        media_server=media_server, base_path=current_app.config["BASE_PATH"],
+        deckid = deckid, categories=categories, onlyfiles=onlyfiles
+    )
+
 def data_serve_static():
     print(f'dir request {dir(request)}')
 
@@ -399,6 +549,7 @@ def setup_routes(app):
     upload.methods = ['POST']
     track.methods = ['GET', 'POST']
     setsession.methods = ['GET', 'POST']
+    autodeck.methods = ['GET', 'POST']
     
     app.add_url_rule('/', 'root', root)
     app.add_url_rule('/url', 'url', url)
@@ -410,7 +561,10 @@ def setup_routes(app):
     app.add_url_rule('/tracklist', 'tracklist', tracklist)
     app.add_url_rule('/setsession', 'setsession', setsession)
     app.add_url_rule('/assets/<path:filename>', 'assets', assets)
+    # pitck deck generator
+    app.add_url_rule('/autodeck', 'autodeck', autodeck)
 
+    
 def setup_queue(app):
     app.queue = Queue(app.config)
     atexit.register(app.queue.shutdown)

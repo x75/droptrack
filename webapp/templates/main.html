@@ -6,6 +6,7 @@
   </head>
   <body>
     <!--  background="http://127.0.0.1/droptrack/data/jdkgegj_r1-autoedit-47.jpg" -->
+    
     <section class="dt-section">
       <!-- <div style="position: relative; top: 100px; left: 100px" class="logo"></div> -->
       <!-- <h1 class="dt-h1">{{ config.APP_NAME }}</h1> -->
@@ -15,6 +16,7 @@
 	  <td style="padding: 0px; text-align: right">
 	    <img style="width: 32px" src="/assets/fm_logo_only_transparent_64.png"></td>
 	</tr>
+      </table>
       {% with flash = get_flashed_messages() %}
       {% if flash %}
       <article>
@@ -22,6 +24,7 @@
       </article>
       {% endif %}
       {% endwith %}
+
       {% block content %}
       {% endblock %}
       {% block content2 %}

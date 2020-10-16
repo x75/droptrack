@@ -1,0 +1,124 @@
+{% extends "main.html" %}
+
+{% block content2 %}
+<div style="position: relative; top: 0px">
+  <div style="position: relative; top: 0px">
+    <table class="dt-table-1">
+      <tr class="dt-table-row-1">
+	<td class="dt-table-col-left">app</td>
+	<td class="dt-table-col-right">session</td>
+      </tr>
+      <tr>
+	<td>
+	  <span class="dt-text-bold"><a href="{{ base_path }}/url">droptrack</a> | <a href="{{ base_path }}/autodeck">autodeck</a></span>
+	</td>
+	<td class="dt-table-col-right">
+	  <span class="dt-text-bold">{{ username }}</span>
+	  <span class="dt-text-normal"><a href="{{base_path}}/setsession">c</a></span>
+	</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+{% if True %}
+<div style="position: relative; top: 0px; font-family: sans">
+
+  <div style="position: relative; top: 0px; font-family: sans">
+    <table style="border: 2px; border-spacing: 10px">
+      <!-- content -->
+      <tr>
+	<td><span class="dt-table-col-right dt-text-bold">categories</span></td>
+	<td>
+	  {% for category in categories %}
+	  {{ category }}, 
+	  {% endfor %}
+	</td>
+      </tr>
+      
+    </table>
+    <p></p>
+  </div>
+
+  <div style="position: relative; top: 0px; font-family: sans">
+    <span style="font-weight: bold">autodeck params</span>
+    <hr />
+    <form action="{{base_path}}/autodeck" method="POST">
+      <input name="deckid" type="hidden" value="{{ deckid }}" />
+      <input name="mode" type="hidden" value="autodeck" />
+      <table>
+	<tr>
+	  <td>sequence</td>
+	  <!-- <td><input name="sequence" type="input" value="120" /></td> -->
+	  <td>
+	    <textarea name="message" rows="10" cols="30">vision tech people</textarea>
+	  </td>
+	</tr>
+	<tr>
+          <td>skin</td>
+	  <td>
+	    <select name="skin" value="neutral">
+	      <option value="neutral">neutral</option>
+	      <option value="soft">soft</option>
+	      <option value="agro">agro</option>
+	    </select>
+	  </td>
+	</tr>
+	<tr>
+          <td>seed</td>
+	  <td><input name="seed" type="input" value="1234" /></td>
+	</tr>
+	<tr>
+	  <td></td>
+	  <td>
+	    <input type="submit" value="make autodeck" />
+	  </td>
+	</tr>
+      </table>
+    </form>
+    <p></p>
+  </div>
+
+  <div style="position: relative; top: 0px; font-family: sans">
+    
+    <div style="position: relative; top: 0px; font-family: sans">
+      <span style="font-weight: bold">generated decks</span>
+    </div>
+
+    <div style="position: relative; top: 0px; font-family: sans">
+
+      {% if True %}
+      {% for onlyfile in onlyfiles %}
+      <div style="position: relative; top: 0px; font-family: sans">
+	<p>{{ onlyfile }}</p>
+	{% if False %}
+	<hr />
+	<table>
+	  {% for fieldkey in rowdata.to_dict() %}
+	  {% if fieldkey in ['length', 'segs', 'filename_', 'numsegs'] %}
+	  {% else %}
+	  <tr>
+	    <td>{{fieldkey}}</td>
+	    <td style="font-family: sans">
+	      {% if fieldkey in ['filename_export', 'autoedit_graph'] %}
+	      <a href="{{ media_server }}/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(40) }}</a>
+	      {% elif fieldkey in ['seg_s'] %}
+	      {{ rowdata[fieldkey]|string }}
+	      {% else %}
+	      {{ rowdata[fieldkey]|string|truncate(40) }}
+	      {% endif %}
+	    </td>
+	  </tr>
+	  {% endif %}
+	  {% endfor %}
+	</table>
+	{% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+      
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
