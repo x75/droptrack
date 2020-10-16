@@ -446,31 +446,41 @@ def autodeck():
         #     return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
         # trackid = int(trackid)
         mode = "show"
-    print(f'    track: session {session.keys()}')
-    print(f'    track: cookies {request.cookies.keys()}')
+    print(f'    autodeck: session {session.keys()}')
+    print(f'    autodeck: cookies {request.cookies.keys()}')
 
     # assemble page content
 
-    categories = [
+    # prior categories
+    categories = set([
         'contact', 'vision', 'tech', 'people', 'product', 'market',
         'deck', 'story',
-    ]
-
+    ])
+    print(f'    autodeck: prior categories {categories}')
+    
     # get slides
-    mypath = '/home/src/QK/droptrack/data/autodeck/categories'
+    mypath = '/home/src/QK/droptrack/data/autodeck'
+    mypath_categories = mypath + '/categories'
 
-    # onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]    
-
+    # get list of generated decks
+    generated_decks = [f for f in listdir(mypath) if isfile(join(mypath, f)) and 'autodeck' in f]
+    
+    # get all directories
     onlydirs = []
-    for (dirpath, dirnames, filenames) in walk(mypath):
+    for (dirpath, dirnames, filenames) in walk(mypath_categories):
         # f.extend(filenames)
         onlydirs.extend(dirnames)
         break
-    print(f'    onlydirs {onlydirs}')
+    print(f'    autodeck: onlydirs {onlydirs}')
 
+    # update prior categories
+    for dirname in onlydirs:
+        categories.add(dirname)
+    print(f'    autodeck: posterior categories {categories}')
+    
     onlyfiles = []
     for onlydir in onlydirs:
-        onlydir2 = mypath + '/' + onlydir
+        onlydir2 = mypath_categories + '/' + onlydir
         print(f'    onlydir2 {onlydir2}')
         l_ = [f for f in listdir(onlydir2) if isfile(join(onlydir2, f))]
         onlyfiles.extend(l_)
@@ -480,19 +490,27 @@ def autodeck():
     filemap = dict(zip(categories, [[] for c_ in categories]))
     print(f'    track: filemap {pformat(filemap)}')
     
+    deck_skins = set()
     for onlyfile in onlyfiles:
         # print(f'    onlyfile {onlyfile}')
-        onlyfile_l = onlyfile.split('-')
+        # onlyfile_l = onlyfile.split('-')
+        onlyfile_l = onlyfile.split('_')
         print(f'    onlyfile_l {onlyfile_l}')
-        
-        filemap[onlyfile_l[2]].append(
+
+        # numbers, numbers, deck-1, rest
+
+        # add deck to set of skins
+        deck_skins.add(onlyfile_l[1])
+
+        # add filename, deck skin, subcat to filemap dict
+        filemap[onlyfile_l[0]].append(
             {
                 'filename': onlyfile,
                 'deck': onlyfile_l[1],
-                'subcat': onlyfile_l[3]
+                'subcat': onlyfile_l[2]
             }
         )
-    print(f'    track: filemap {pformat(filemap)}')
+    print(f'    autodeck: filemap {pformat(filemap)}')
     
     autodeck_result = None
     # {
@@ -538,7 +556,9 @@ def autodeck():
     return render_template(
         'autodeck.html', name="opt", username=username,
         media_server=media_server, base_path=current_app.config["BASE_PATH"],
-        deckid = deckid, categories=categories, onlyfiles=onlyfiles
+        deckid = deckid, categories=categories,
+        generated_decks=generated_decks, onlyfiles=onlyfiles,
+        filemap=filemap, deck_skins=deck_skins
     )
 
 def data_serve_static():
