@@ -51,15 +51,19 @@
 	  <td>sequence</td>
 	  <!-- <td><input name="sequence" type="input" value="120" /></td> -->
 	  <td>
-	    <textarea name="message" rows="10" cols="30">vision tech people</textarea>
+	    <textarea name="sequence" rows="10" cols="30">{{ session_dict["sequence"] }}</textarea>
 	  </td>
 	</tr>
 	<tr>
           <td>skin</td>
 	  <td>
-	    <select name="deck_skin" value="deck-1">
+	    <select name="deck_skin" value="{{ session_dict['deck_skin'] }}">
 	      {% for deck_skin in deck_skins %}
+	      {% if deck_skin == session_dict['deck_skin'] %}
+	      <option value="{{ deck_skin }}" selected="True">{{ deck_skin }}</option>
+	      {% else %}
 	      <option value="{{ deck_skin }}">{{ deck_skin }}</option>
+	      {% endif %}
 	      {% endfor %}
 	    </select>
 	  </td>
