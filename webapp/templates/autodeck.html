@@ -96,29 +96,7 @@
       {% if True %}
       {% for generated_deck in generated_decks %}
       <div style="position: relative; top: 0px; font-family: sans">
-	<p><a href="{{ media_server }}/droptrack/autodeck/{{ generated_deck }}">{{ generated_deck }}</a></p>
-	{% if False %}
-	<hr />
-	<table>
-	  {% for fieldkey in rowdata.to_dict() %}
-	  {% if fieldkey in ['length', 'segs', 'filename_', 'numsegs'] %}
-	  {% else %}
-	  <tr>
-	    <td>{{fieldkey}}</td>
-	    <td style="font-family: sans">
-	      {% if fieldkey in ['filename_export', 'autoedit_graph'] %}
-	      <a href="{{ media_server }}/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(40) }}</a>
-	      {% elif fieldkey in ['seg_s'] %}
-	      {{ rowdata[fieldkey]|string }}
-	      {% else %}
-	      {{ rowdata[fieldkey]|string|truncate(40) }}
-	      {% endif %}
-	    </td>
-	  </tr>
-	  {% endif %}
-	  {% endfor %}
-	</table>
-	{% endif %}
+	<p><a href="{{ media_server }}/droptrack/data/autodeck/generated/{{ generated_deck }}">{{ generated_deck }}</a></p>
       </div>
       
       {% endfor %}
@@ -140,29 +118,7 @@
       {% if True %}
       {% for onlyfile in onlyfiles %}
       <div style="position: relative; top: 0px; font-family: sans">
-	<p><a href="{{ media_server }}/droptrack/autodeck/{{ onlyfile }}">{{ onlyfile }}</a></p>
-	{% if False %}
-	<hr />
-	<table>
-	  {% for fieldkey in rowdata.to_dict() %}
-	  {% if fieldkey in ['length', 'segs', 'filename_', 'numsegs'] %}
-	  {% else %}
-	  <tr>
-	    <td>{{fieldkey}}</td>
-	    <td style="font-family: sans">
-	      {% if fieldkey in ['filename_export', 'autoedit_graph'] %}
-	      <a href="{{ media_server }}/droptrack/{{rowdata[fieldkey]}}">{{ rowdata[fieldkey]|string|truncate(40) }}</a>
-	      {% elif fieldkey in ['seg_s'] %}
-	      {{ rowdata[fieldkey]|string }}
-	      {% else %}
-	      {{ rowdata[fieldkey]|string|truncate(40) }}
-	      {% endif %}
-	    </td>
-	  </tr>
-	  {% endif %}
-	  {% endfor %}
-	</table>
-	{% endif %}
+	<p><a href="{{ media_server }}/droptrack/data/autodeck/categories/{{ onlyfile.split('_')[0] }}/{{ onlyfile }}">{{ onlyfile }}</a></p>
       </div>
       
       {% endfor %}

@@ -137,8 +137,9 @@ def root():
     return session_close(resp_html, session_dict)
 
 def url():
-    """
-    Accept soundfile url
+    """url
+
+    Accept soundfile url for download
     """
     # check session cookie
     session_dict = session_init()
@@ -428,7 +429,7 @@ def setsession():
         # set cookie on response
         # if 'username' not in request.cookies:        
         print(f'setting cookie[username] to {sessionkey}')
-        resp.set_cookie('username', sessionkey)
+        # resp.set_cookie('username', sessionkey)
         session_dict['username'] = sessionkey
             
         erfolg = f'JUHUUU Erfolg! changed session from {username} to {sessionkey}'
@@ -476,6 +477,10 @@ def make_item_choice(filemap, item, deck):
     return item_choice
 
 def run_autodeck(**kwargs):
+    """run autodeck
+
+    Run the autodeck generator function
+    """
     
     # print(f'        run_autodeck kwargs {kwargs}')
     if 'sequence' not in kwargs:
@@ -493,19 +498,26 @@ def run_autodeck(**kwargs):
             'autodeck': False,
         }
 
+    # get slide sequence as list from input string
     sequence = kwargs['sequence'].split(' ')
+    # get the style info
     deck = kwargs['deck']
     print(f'    run_autodeck deck {deck}')
-    # filemap is dict with keys for categories pointing to lists of files
+    
+    # filemap is a dictionary with categories pointing to lists of files
     filemap = kwargs['filemap']
     item_choices = []
     for i, item in enumerate(sequence):
         # print(f'    run_ad item_{i} {item}')
         # print(f'    run_ad item_{i} {filemap[item]}')
+
+        # choose item for this category including style info
         item_choice = make_item_choice(filemap, item, deck)
         print(f'        run_autodeck item_choice {item} {item_choice}')
+        # collect choices into deck list
         item_choices.append(item_choice)
-    
+
+    # return list slides and original sequence
     return {
         'autodeck': True,
         'sequence': sequence,
@@ -513,6 +525,10 @@ def run_autodeck(**kwargs):
     }
 
 def autodeck():
+    """autodeck
+
+    autodeck URL handler, translating HTTP arguments into generator arguments
+    """
     # check session cookie
     session_dict = session_init()
     username = session_dict['username']
@@ -556,7 +572,7 @@ def autodeck():
     # get list of generated decks
     generated_decks = [f for f in listdir(mypath_generated) if isfile(join(mypath_generated, f)) and 'autodeck' in f]
     
-    # get all directories
+    # get all categories from directories
     onlydirs = []
     for (dirpath, dirnames, filenames) in walk(mypath_categories):
         # f.extend(filenames)
@@ -568,50 +584,52 @@ def autodeck():
     for dirname in onlydirs:
         categories.add(dirname)
     # print(f'    autodeck: posterior categories {categories}')
-    
+
+    # get list of all files within categories
     onlyfiles = []
     for onlydir in onlydirs:
         onlydir2 = mypath_categories + '/' + onlydir
         # print(f'    onlydir2 {onlydir2}')
         l_ = [f for f in listdir(onlydir2) if isfile(join(onlydir2, f))]
         onlyfiles.extend(l_)
-    # print(f'    onlyfiles {onlyfiles}')
+    onlyfiles = sorted(onlyfiles)
+    print(f'    onlyfiles {onlyfiles}')
+    
 
+    # create dictionary from categories
     # TODO sort this list into dict
     filemap = dict(zip(categories, [[] for c_ in categories]))
     # print(f'    autodeck: filemap {pformat(filemap)}')
-    
+
+    # get themes / skins for decks by listing files
     deck_skins = set()
     for onlyfile in onlyfiles:
         # print(f'    onlyfile {onlyfile}')
         # onlyfile_l = onlyfile.split('-')
+
+        # isolate file name
         onlyfile_l = onlyfile.split('_')
         # print(f'    onlyfile_l {onlyfile_l}')
 
         # numbers, numbers, deck-1, rest
 
         # add deck to set of skins
-        deck_skins.add(onlyfile_l[1])
+        deck_skins.add(onlyfile_l[-1].split('.')[0])
 
         # add filename, deck skin, subcat to filemap dict
         filemap[onlyfile_l[0]].append(
             {
                 'filename': onlyfile,
-                'deck': onlyfile_l[1],
+                'deck': onlyfile_l[-1],
+                'subcat_i': onlyfile_l[1],
                 'subcat': onlyfile_l[2]
             }
         )
+    deck_skins = sorted(deck_skins)
     print(f'    autodeck: filemap {pformat(filemap)}')
-    
+
+    # run autodeck
     autodeck_result = None
-    # {
-    #     # 'filename_export': None,
-    #     # 'length': None,
-    #     # 'segs': None,
-    #     # 'final_duration': 0,
-    #     # 'seg_s': 0
-    #     'filemap': filemap
-    # }
 
     if mode == "autodeck":
         # print(f'    autodeck am start')
@@ -620,12 +638,16 @@ def autodeck():
             filemap=filemap,
             deck=session_dict['deck_skin'],
         )
-        # data_write(autoedit_results, autoedit_results_filename)
+
+    # if result is good
     if autodeck_result is not None:
-        # {random.randint(0, 1000000)
+        # get count of generated deck for autonumbering
         autodeck_count = autodeck_get_count()
         # print(f'    autodeck autodeck_result {pformat(autodeck_result)}')
+
+        # import pdfrw library
         from pdfrw import PdfReader, PdfWriter, IndirectPdfDict
+        # create pdf outfile and write slides to it
         outfilename = f'/home/src/QK/droptrack/data/autodeck/generated/autodeck-{autodeck_count}-{len(autodeck_result["item_choices"])}-{session_dict["deck_skin"]}.pdf' 
         writer = PdfWriter()
         for i, slide in enumerate(autodeck_result['item_choices']):
@@ -645,11 +667,14 @@ def autodeck():
         )
         writer.write(outfilename)       
 
+    # get media server configuration variable for static file links
     media_server = current_app.config['MEDIA_SERVER']
     # print(f'    autodeck media_server {media_server}')
 
+    # create a random deck id
     deckid = random.randint(0, 100)
-    
+
+    # create response html
     resp_html = render_template(
         'autodeck.html', name="opt", username=username,
         media_server=media_server, base_path=current_app.config["BASE_PATH"],
