@@ -268,8 +268,8 @@ def track():
             return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
         trackid = int(trackid)
         mode = "show"
-    print(f'    track: session {session.keys()}')
-    print(f'    track: cookies {request.cookies.keys()}')
+    # print(f'    track: session {session.keys()}')
+    # print(f'    track: cookies {request.cookies.keys()}')
     
     # load tracks
     # tracklist = pd.read_csv('{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], username))
@@ -466,9 +466,14 @@ def autodeck_get_count():
     f.flush()
     return autodeck_count
 
-def make_item_choice(filemap, item, deck):
+def make_item_choice(filemap, item, deck, item_num=1):
 
-    filemap_filt = [_ for _ in filemap[item] if _['deck'] == deck ]
+    # filemap_filt = [_ for _ in filemap[item] if _['deck'] == deck ]
+    print(f'    make_item_choice filemap[{item}] {filemap[item]}')
+    filemap_filt = [_ for _ in filemap[item] if _['deck'] == deck and _['subcat_i'] == item_num]
+    print(f'    make_item_choice filemap_filt by {deck} item {item_num} {filemap_filt}')
+
+    # TODO: enable slide numbering
     if len(filemap_filt) < 1:
         item_choice = random.choice(filemap[item])
     else:
@@ -511,8 +516,15 @@ def run_autodeck(**kwargs):
         # print(f'    run_ad item_{i} {item}')
         # print(f'    run_ad item_{i} {filemap[item]}')
 
+        if '-' in item:
+            item_name, item_num = item.split('-')
+            item_num = int(item_num)
+        else:
+            item_name = item
+            item_num = 1
+        
         # choose item for this category including style info
-        item_choice = make_item_choice(filemap, item, deck)
+        item_choice = make_item_choice(filemap, item_name, deck, item_num)
         print(f'        run_autodeck item_choice {item} {item_choice}')
         # collect choices into deck list
         item_choices.append(item_choice)
@@ -552,8 +564,8 @@ def autodeck():
         #     return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
         # trackid = int(trackid)
         mode = "show"
-    print(f'    autodeck: session {session.keys()}')
-    print(f'    autodeck: cookies {request.cookies.keys()}')
+    # print(f'    autodeck: session {session.keys()}')
+    # print(f'    autodeck: cookies {request.cookies.keys()}')
 
     # assemble page content
 
@@ -571,6 +583,7 @@ def autodeck():
 
     # get list of generated decks
     generated_decks = [f for f in listdir(mypath_generated) if isfile(join(mypath_generated, f)) and 'autodeck' in f]
+    generated_decks = sorted(generated_decks, reverse=True)
     
     # get all categories from directories
     onlydirs = []
@@ -590,7 +603,7 @@ def autodeck():
     for onlydir in onlydirs:
         onlydir2 = mypath_categories + '/' + onlydir
         # print(f'    onlydir2 {onlydir2}')
-        l_ = [f for f in listdir(onlydir2) if isfile(join(onlydir2, f))]
+        l_ = [f for f in listdir(onlydir2) if isfile(join(onlydir2, f)) and f.endswith('.pdf')]
         onlyfiles.extend(l_)
     onlyfiles = sorted(onlyfiles)
     print(f'    onlyfiles {onlyfiles}')
@@ -609,24 +622,27 @@ def autodeck():
 
         # isolate file name
         onlyfile_l = onlyfile.split('_')
+
         # print(f'    onlyfile_l {onlyfile_l}')
 
         # numbers, numbers, deck-1, rest
 
+        # remove .pdf for deck name
+        deck_ = onlyfile_l[-1].split('.')[0]
         # add deck to set of skins
-        deck_skins.add(onlyfile_l[-1].split('.')[0])
+        deck_skins.add(deck_)
 
         # add filename, deck skin, subcat to filemap dict
         filemap[onlyfile_l[0]].append(
             {
                 'filename': onlyfile,
-                'deck': onlyfile_l[-1],
-                'subcat_i': onlyfile_l[1],
+                'deck': deck_, # onlyfile_l[-1],
+                'subcat_i': int(onlyfile_l[1]),
                 'subcat': onlyfile_l[2]
             }
         )
     deck_skins = sorted(deck_skins)
-    print(f'    autodeck: filemap {pformat(filemap)}')
+    # print(f'    autodeck: filemap {pformat(filemap)}')
 
     # run autodeck
     autodeck_result = None
@@ -652,6 +668,8 @@ def autodeck():
         writer = PdfWriter()
         for i, slide in enumerate(autodeck_result['item_choices']):
             slidecat = autodeck_result['sequence'][i]
+            if '-' in slidecat:
+                slidecat = slidecat.split('-')[0]
             slidefilename = '/home/src/QK/droptrack/data/autodeck/categories' + '/' + \
                             slidecat + '/' + \
                             slide['filename']
