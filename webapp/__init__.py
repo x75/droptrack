@@ -90,7 +90,8 @@ def session_init():
     else:
         username = request.cookies["username"]
         print(f'    webapp session_init getting username {username}')
-    
+
+    d['username'] = username
     for k in request.cookies:
         d[k] = request.cookies[k]
     return d
