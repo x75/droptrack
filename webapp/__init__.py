@@ -4,6 +4,11 @@ import atexit
 from logging import Formatter
 from logging.handlers import SysLogHandler
 import os
+from os import listdir
+from os.path import isfile, join
+from os import walk
+from pprint import pformat
+
 from werkzeug.utils import secure_filename
 from flask import (
     Flask,
@@ -49,62 +54,99 @@ def store_user_session(username):
     # user_session_log_file = 'data/user_session_log.csv'
     # user_session_log_file = data_conf['user_session_log_file']
     # user_session_log = pd.read_csv(user_session_log_file, sep=',', header=0)
+    
     user_session_log = data_init(columns=data_conf['user_session_columns'], filename=data_conf['user_session_log_file'])
     if len(user_session_log.index) < 1:
         user_session_log_max_idx = -1
     else:
         user_session_log_max_idx = user_session_log.index[-1]
     print(f'    store_user_session user_session_log {user_session_log}\n    user_session_log_max_idx {user_session_log_max_idx}')
+    
     datetime = time.strftime('%Y-%m-%d %H:%M:%S')
     IP = request.remote_addr
     row = {'username': username, 'datetime': datetime, 'IP': IP}
     userid = user_session_log_max_idx + 1
     print(f'    store_user_session insert row {row}\n    at loc[{userid}]')
+    
     # user_session_log = user_session_log.loc[userid] = row
     # user_session_log = user_session_log.append(row, ignore_index=True)
     # user_session_log.to_csv(user_session_log_file)
+    
     data_append_row(row, user_session_log)
     data_write(user_session_log, data_conf['user_session_log_file'])
     return
 
-def root():
-    # check if username in session cookie
+def session_init():
+    """check session cookie
+    
+    check if 'username' is in session cookie
+    """
+    d = {}
     if 'username' not in request.cookies:
         username = generate_username(4)
-        print(f'creating username {username}')
+        print(f'    webapp session_init creating username {username}')
 
         store_user_session(username)
     else:
         username = request.cookies["username"]
-        print(f'getting cookie {username}')
+        print(f'    webapp session_init getting username {username}')
 
+    d['username'] = username
+    for k in request.cookies:
+        d[k] = request.cookies[k]
+    return d
+
+def session_close(resp_html, session_dict):
+    # create response
+    resp = make_response(
+        resp_html
+    )
+
+    resp = set_cookies(resp, session_dict)
+    return resp
+    
+def set_cookies(resp, cookies):
+    # set cookie on response for each key
+    for k in cookies:
+        if k not in request.cookies:        
+            print(f'    updating cookie[{k}] to {cookies[k]}')
+            resp.set_cookie(k, cookies[k])
+        if k in request.cookies:
+            if cookies[k] != request.cookies[k]:
+                print(f'    updating cookie[{k}] to {cookies[k]}')
+                resp.set_cookie(k, cookies[k])
+    return resp
+
+def root():
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+    
     # default tracklist
-    # tracklist = pd.read_csv('{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], username))
     tracklist_filename = '{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], username)
     tracklist = data_init(data_conf['trackstore_columns'], tracklist_filename)
     print(f'tracklist {tracklist.columns} {tracklist.shape}')
 
     # base_path = BASE_PATH # request.path
     print(f'    webapp root base_path {current_app.config["BASE_PATH"]}')
-    
-    # create response
-    resp = make_response(
-        render_template(
-            'url.html', username=username, tracklist=tracklist,
-            base_path=current_app.config["BASE_PATH"]
-        ))
 
-    # set cookie on response
-    if 'username' not in request.cookies:        
-        print(f'setting cookie[username] to {username}')
-        resp.set_cookie('username', username)
-    return resp
+    resp_html = render_template(
+        'url.html', username=username, tracklist=tracklist,
+        base_path=current_app.config["BASE_PATH"]
+    )
+
+    return session_close(resp_html, session_dict)
 
 def url():
+    """url
+
+    Accept soundfile url for download
     """
-    Accept soundfile url
-    """
-    assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+    
+    # assert 'username' in request.cookies, 'Require username, please restart app from root level'
     if request.method == 'POST':
         url = request.form.get('url')
         if validate_url(url):
@@ -124,12 +166,12 @@ def url():
     return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/')
 
 def tracklist():
-    assert 'username' in request.cookies, 'Require username, please restart app from root level'
-    if 'username' in request.cookies:
-        username = request.cookies["username"]
-    else:
-        username = 'default'
-
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+    
+    # assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    
     # tracklist_filename = f'{conf["trackstore_filename_base"]}_{username}.csv'
     # tracklist = pd.read_csv(tracklist_filename)
     tracklist_filename = '{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], username)
@@ -141,20 +183,21 @@ def tracklist():
     tracklist_filename_default = '{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], 'default')
     tracklist_default = data_init(data_conf['trackstore_columns'], tracklist_filename_default)
 
-    return render_template(
+    resp_html = render_template(
         'tracklist.html', tracklist=tracklist,
         tracklist_default=tracklist_default, username=username,
         base_path=current_app.config["BASE_PATH"]
     )
 
+    return session_close(resp_html, session_dict)
+
 def run_autoedit(args):
-    assert 'username' in request.cookies, 'Require username, please restart app from root level'
-    # get user_session
-    if 'username' in request.cookies:
-        username = request.cookies["username"]
-    else:
-        username = 'default'
-        
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+
+    # assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    
     print(f'autoedit args {type(args)}')
     # print(f'autoedit request {dir(request)}')
     # print(f'autoedit request {request.json}')
@@ -205,17 +248,16 @@ def run_autoedit(args):
     
     return autoedit_res
 
-def trackdl():
-    path = request.form[trackpath]
-    return send_from_directory('data/download', path)
+# def trackdl():
+#     path = request.form[trackpath]
+#     return send_from_directory('data/download', path)
 
 def track():
-    assert 'username' in request.cookies, 'Require username, please restart app from root level'
-    # get user_session
-    if 'username' in request.cookies:
-        username = request.cookies["username"]
-    else:
-        username = 'default'
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+
+    # assert 'username' in request.cookies, 'Require username, please restart app from root level'
 
     # handle request methods
     if request.method == 'POST':
@@ -229,8 +271,8 @@ def track():
             return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
         trackid = int(trackid)
         mode = "show"
-    print(f'    track: session {session.keys()}')
-    print(f'    track: cookies {request.cookies.keys()}')
+    # print(f'    track: session {session.keys()}')
+    # print(f'    track: cookies {request.cookies.keys()}')
     
     # load tracks
     # tracklist = pd.read_csv('{0}_{1}.csv'.format(data_conf['trackstore_filename_base'], username))
@@ -294,18 +336,25 @@ def track():
     print(f'    tracklist media_server {media_server}')
     
     # print(f'    track: autoedit_res {autoedit_res}')
-    return render_template(
+    resp_html = render_template(
         'track.html', name="opt", tracklist=track, username=username,
         autoedit_res=autoedit_res, autoedit_results=autoedit_results,
         media_server=media_server,
         base_path=current_app.config["BASE_PATH"]
     )
 
+    return session_close(resp_html, session_dict)
+
 def upload():
     """
     Accept soundfile upload
     """
-    assert 'username' in request.cookies, 'Require username, please restart app from root level'
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+
+    # assert 'username' in request.cookies, 'Require username, please restart app from root level'
+
     if request.method == 'POST':
         soundfile = request.files.get('soundfile')
         print(f'    upload from soundfile {soundfile}')
@@ -341,6 +390,10 @@ def upload():
 
 
 def download(filename):
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+
     return send_from_directory(
         current_app.config['UPLOAD_DIR'],
         filename,
@@ -348,6 +401,10 @@ def download(filename):
     )
 
 def assets(filename):
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+
     return send_from_directory(
         current_app.config['ASSETS_DIR'],
         filename,
@@ -355,13 +412,10 @@ def assets(filename):
     )
 
 def setsession():
-    assert 'username' in request.cookies, 'Require username, please restart app from root level'
-    # get user_session
-    if 'username' in request.cookies:
-        username = request.cookies["username"]
-    else:
-        username = 'default'
-    
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+
     # # check if username in session cookie
     # if 'username' not in request.cookies:
     #     username = generate_username(4)
@@ -372,26 +426,286 @@ def setsession():
     #     username = request.cookies["username"]
     #     print(f'getting cookie {username}')
     
-    # create response
-    resp = make_response(
-        render_template(
-            'session.html', username=username,
-            base_path=current_app.config["BASE_PATH"]
-        ))
-
     if request.method == 'POST':
         sessionkey = request.form.get('sessionkey')
         
         # set cookie on response
         # if 'username' not in request.cookies:        
         print(f'setting cookie[username] to {sessionkey}')
-        resp.set_cookie('username', sessionkey)
+        # resp.set_cookie('username', sessionkey)
+        session_dict['username'] = sessionkey
             
         erfolg = f'JUHUUU Erfolg! changed session from {username} to {sessionkey}'
         flash(erfolg)
         
         # return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/setsession')
-    return resp
+
+    # create response
+    resp_html = render_template(
+        'session.html', username=username,
+        base_path=current_app.config["BASE_PATH"]
+    )
+
+    # return resp
+
+    return session_close(resp_html, session_dict)
+
+def autodeck_get_count():
+    """autodeck get count
+
+    load autodeck count from file, if it does not exist, init zero and
+    save to file.
+    """
+    autodeck_count_filename = 'data/autoedit/autodeck-count.txt'
+    if os.path.exists(autodeck_count_filename):
+        autodeck_count = int(open(autodeck_count_filename, 'r').read().strip())
+        print(f'autodeck_get_count from file {autodeck_count}, {type(autodeck_count)}')
+    else:
+        autodeck_count = 0
+        print(f'autodeck_get_count file no found, init {autodeck_count}')
+    autodeck_count_new = autodeck_count + 1
+    f = open(autodeck_count_filename, 'w')
+    f.write(f'{autodeck_count_new}\n')
+    f.flush()
+    return autodeck_count
+
+def make_item_choice(filemap, item, deck, item_num=1):
+
+    # filemap_filt = [_ for _ in filemap[item] if _['deck'] == deck ]
+    print(f'    make_item_choice filemap[{item}] {filemap[item]}')
+    filemap_filt = [_ for _ in filemap[item] if _['deck'] == deck and _['subcat_i'] == item_num]
+    print(f'    make_item_choice filemap_filt by {deck} item {item_num} {filemap_filt}')
+
+    # TODO: enable slide numbering
+    if len(filemap_filt) < 1:
+        item_choice = random.choice(filemap[item])
+    else:
+        item_choice = random.choice(filemap_filt)
+
+    return item_choice
+
+def run_autodeck(**kwargs):
+    """run autodeck
+
+    Run the autodeck generator function
+    """
+    
+    # print(f'        run_autodeck kwargs {kwargs}')
+    if 'sequence' not in kwargs:
+        return {
+            'autodeck': False,
+        }
+
+    if 'filemap' not in kwargs:
+        return {
+            'autodeck': False,
+        }
+
+    if 'deck' not in kwargs:
+        return {
+            'autodeck': False,
+        }
+
+    # get slide sequence as list from input string
+    sequence = kwargs['sequence'].split(' ')
+    # get the style info
+    deck = kwargs['deck']
+    print(f'    run_autodeck deck {deck}')
+    
+    # filemap is a dictionary with categories pointing to lists of files
+    filemap = kwargs['filemap']
+    item_choices = []
+    for i, item in enumerate(sequence):
+        # print(f'    run_ad item_{i} {item}')
+        # print(f'    run_ad item_{i} {filemap[item]}')
+
+        if '-' in item:
+            item_name, item_num = item.split('-')
+            item_num = int(item_num)
+        else:
+            item_name = item
+            item_num = 1
+        
+        # choose item for this category including style info
+        item_choice = make_item_choice(filemap, item_name, deck, item_num)
+        print(f'        run_autodeck item_choice {item} {item_choice}')
+        # collect choices into deck list
+        item_choices.append(item_choice)
+
+    # return list slides and original sequence
+    return {
+        'autodeck': True,
+        'sequence': sequence,
+        'item_choices': item_choices,
+    }
+
+def autodeck():
+    """autodeck
+
+    autodeck URL handler, translating HTTP arguments into generator arguments
+    """
+    # check session cookie
+    session_dict = session_init()
+    username = session_dict['username']
+
+    # assert 'username' in request.cookies, 'Require username, please restart app from root level'
+
+    # handle request methods
+    if request.method == 'POST':
+        print(f'    autodeck POST {request} {request.form}')
+        # trackid = int(request.form.get('trackid'))
+        for k in request.form:
+            print(f'    autodeck form key {k}')
+            session_dict[k] = request.form[k]
+        # mode = request.form.get('mode')
+        mode = session_dict['mode']
+    else:
+        print(f'autodeck GET {request}')
+        # trackid = request.args.get('trackid')
+        # if trackid is None:
+        #     flash('no trackid')
+        #     return redirect(f'{request.host_url[:-1]}/{current_app.config["BASE_PATH"]}/tracklist')
+        # trackid = int(trackid)
+        mode = "show"
+    # print(f'    autodeck: session {session.keys()}')
+    # print(f'    autodeck: cookies {request.cookies.keys()}')
+
+    # assemble page content
+
+    # prior categories
+    categories = set([
+        'contact', 'vision', 'tech', 'people', 'product', 'market',
+        'deck', 'story',
+    ])
+    # print(f'    autodeck: prior categories {categories}')
+    
+    # get slides
+    mypath = '/home/src/QK/droptrack/data/autodeck'
+    mypath_categories = mypath + '/categories'
+    mypath_generated = mypath + '/generated'
+
+    # get list of generated decks
+    generated_decks = [f for f in listdir(mypath_generated) if isfile(join(mypath_generated, f)) and 'autodeck' in f]
+    generated_decks = sorted(generated_decks, reverse=True)
+    
+    # get all categories from directories
+    onlydirs = []
+    for (dirpath, dirnames, filenames) in walk(mypath_categories):
+        # f.extend(filenames)
+        onlydirs.extend(dirnames)
+        break
+    # print(f'    autodeck: onlydirs {onlydirs}')
+
+    # update prior categories
+    for dirname in onlydirs:
+        categories.add(dirname)
+    # print(f'    autodeck: posterior categories {categories}')
+
+    # get list of all files within categories
+    onlyfiles = []
+    for onlydir in onlydirs:
+        onlydir2 = mypath_categories + '/' + onlydir
+        # print(f'    onlydir2 {onlydir2}')
+        l_ = [f for f in listdir(onlydir2) if isfile(join(onlydir2, f)) and f.endswith('.pdf')]
+        onlyfiles.extend(l_)
+    onlyfiles = sorted(onlyfiles)
+    print(f'    onlyfiles {onlyfiles}')
+    
+
+    # create dictionary from categories
+    # TODO sort this list into dict
+    filemap = dict(zip(categories, [[] for c_ in categories]))
+    # print(f'    autodeck: filemap {pformat(filemap)}')
+
+    # get themes / skins for decks by listing files
+    deck_skins = set()
+    for onlyfile in onlyfiles:
+        # print(f'    onlyfile {onlyfile}')
+        # onlyfile_l = onlyfile.split('-')
+
+        # isolate file name
+        onlyfile_l = onlyfile.split('_')
+
+        # print(f'    onlyfile_l {onlyfile_l}')
+
+        # numbers, numbers, deck-1, rest
+
+        # remove .pdf for deck name
+        deck_ = onlyfile_l[-1].split('.')[0]
+        # add deck to set of skins
+        deck_skins.add(deck_)
+
+        # add filename, deck skin, subcat to filemap dict
+        filemap[onlyfile_l[0]].append(
+            {
+                'filename': onlyfile,
+                'deck': deck_, # onlyfile_l[-1],
+                'subcat_i': int(onlyfile_l[1]),
+                'subcat': onlyfile_l[2]
+            }
+        )
+    deck_skins = sorted(deck_skins)
+    # print(f'    autodeck: filemap {pformat(filemap)}')
+
+    # run autodeck
+    autodeck_result = None
+
+    if mode == "autodeck":
+        # print(f'    autodeck am start')
+        autodeck_result = run_autodeck(
+            sequence=session_dict['sequence'],
+            filemap=filemap,
+            deck=session_dict['deck_skin'],
+        )
+
+    # if result is good
+    if autodeck_result is not None:
+        # get count of generated deck for autonumbering
+        autodeck_count = autodeck_get_count()
+        # print(f'    autodeck autodeck_result {pformat(autodeck_result)}')
+
+        # import pdfrw library
+        from pdfrw import PdfReader, PdfWriter, IndirectPdfDict
+        # create pdf outfile and write slides to it
+        outfilename = f'/home/src/QK/droptrack/data/autodeck/generated/autodeck-{autodeck_count}-{len(autodeck_result["item_choices"])}-{session_dict["deck_skin"]}.pdf' 
+        writer = PdfWriter()
+        for i, slide in enumerate(autodeck_result['item_choices']):
+            slidecat = autodeck_result['sequence'][i]
+            if '-' in slidecat:
+                slidecat = slidecat.split('-')[0]
+            slidefilename = '/home/src/QK/droptrack/data/autodeck/categories' + '/' + \
+                            slidecat + '/' + \
+                            slide['filename']
+            print(f'        autodeck i {i} slidefilename {slidefilename} {slidecat}')
+            
+            writer.addpages(PdfReader(slidefilename).pages)
+
+        writer.trailer.Info = IndirectPdfDict(
+            Title='your title goes here',
+            Author='your name goes here',
+            Subject='what is it all about?',
+            Creator='some script goes here',
+        )
+        writer.write(outfilename)       
+
+    # get media server configuration variable for static file links
+    media_server = current_app.config['MEDIA_SERVER']
+    # print(f'    autodeck media_server {media_server}')
+
+    # create a random deck id
+    deckid = random.randint(0, 100)
+
+    # create response html
+    resp_html = render_template(
+        'autodeck.html', name="opt", username=username,
+        media_server=media_server, base_path=current_app.config["BASE_PATH"],
+        deckid = deckid, categories=categories,
+        generated_decks=generated_decks, onlyfiles=onlyfiles,
+        filemap=filemap, deck_skins=deck_skins,
+        session_dict=session_dict
+    )
+
+    return session_close(resp_html, session_dict)
 
 def data_serve_static():
     print(f'dir request {dir(request)}')
@@ -401,6 +715,7 @@ def setup_routes(app):
     upload.methods = ['POST']
     track.methods = ['GET', 'POST']
     setsession.methods = ['GET', 'POST']
+    autodeck.methods = ['GET', 'POST']
     
     app.add_url_rule('/', 'root', root)
     app.add_url_rule('/url', 'url', url)
@@ -408,15 +723,16 @@ def setup_routes(app):
     app.add_url_rule('/soundfile', 'upload', upload)
     app.add_url_rule('/soundfile/<path:filename>', 'download', download)
     app.add_url_rule('/track', 'track', track)
-    app.add_url_rule('/trackdl', 'trackdl', trackdl)
+    # app.add_url_rule('/trackdl', 'trackdl', trackdl)
     app.add_url_rule('/tracklist', 'tracklist', tracklist)
     # app.add_url_rule('/droptrack', 'droptrack', droptrack)
     app.add_url_rule('/setsession', 'setsession', setsession)
     app.add_url_rule('/assets/<path:filename>', 'assets', assets)
+    # pitck deck generator
+    app.add_url_rule('/autodeck', 'autodeck', autodeck)
 
 def droptrack():
     return redirect('/')
-
 
 def setup_queue(app):
     app.queue = Queue(app.config)

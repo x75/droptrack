@@ -13,6 +13,7 @@ data/*.wav
 data/*.pkl
 data/*.txt
 data/audio_sort_features/*.txt
+data/autodeck/*
 *.pkl
 *.jpg
 *.pdf
